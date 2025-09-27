@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { login } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +28,7 @@ function SubmitButton() {
 
 export function LoginForm() {
   const initialState = { message: undefined, error: undefined };
-  const [state, dispatch] = useFormState(login, initialState);
+  const [state, dispatch] = useActionState(login, initialState);
 
   return (
     <Card>
