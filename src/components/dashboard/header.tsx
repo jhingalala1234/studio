@@ -31,7 +31,7 @@ export function Header({ user }: { user: User }) {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black/50 backdrop-blur-lg">
+    <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black">
       {/* Top Row: Centered Logo */}
       <div className="w-full px-4 py-4 md:px-6">
         <div className="flex items-center justify-center">
@@ -79,16 +79,16 @@ export function Header({ user }: { user: User }) {
           </Sheet>
         </div>
 
-        {/* Desktop Navigation Links (Left) */}
-        <div className="hidden items-center gap-6 md:flex">
+        {/* Desktop Navigation Links (Centered) */}
+        <div className="hidden flex-1 items-center justify-center gap-4 md:flex">
           {navItems.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
               className={cn(
-                'text-sm font-medium transition-colors hover:text-primary',
+                'rounded-md px-3 py-1 text-sm font-medium transition-all hover:bg-white/10 hover:text-white',
                 pathname === href
-                  ? 'text-primary'
+                  ? 'bg-white/5 text-white'
                   : 'text-muted-foreground'
               )}
             >
@@ -98,14 +98,14 @@ export function Header({ user }: { user: User }) {
         </div>
 
         {/* Right-aligned Actions */}
-        <div className="flex items-center justify-end gap-4">
-          <form className="hidden sm:block">
+        <div className="flex items-center justify-end gap-2">
+          <form>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search..."
-                className="w-full rounded-lg bg-background/80 pl-8 md:w-[200px] lg:w-[300px]"
+                className="w-full rounded-lg bg-background/80 pl-8 md:w-[200px] lg:w-[250px]"
               />
             </div>
           </form>
