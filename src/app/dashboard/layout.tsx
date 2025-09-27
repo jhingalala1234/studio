@@ -8,7 +8,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect('/login');
+    // This should ideally not happen with the new auth logic, but as a fallback.
+    redirect('/'); 
   }
 
   return (

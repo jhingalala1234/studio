@@ -120,7 +120,7 @@ export function Header({ user }: { user: User }) {
           <DropdownMenuItem>Support</DropdownMenuItem>
           <DropdownMenuSeparator />
           <form action={logout}>
-            <button type="submit" className="w-full">
+            <button type="submit" className="w-full text-left">
               <DropdownMenuItem>
                 Logout
               </DropdownMenuItem>

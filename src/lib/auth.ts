@@ -30,16 +30,8 @@ export async function login(email: string): Promise<void> {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const session = cookies().get(FAKE_SESSION_COOKIE);
-  if (!session?.value) return null;
-  try {
-    const user = JSON.parse(session.value) as User;
-    // re-validate user from data source
-    const freshUser = users.find(u => u.id === user.id);
-    return freshUser || null;
-  } catch {
-    return null;
-  }
+    const defaultUser = users.find(u => u.email === 'demo@demo.com');
+    return defaultUser || users[0];
 }
 
 export async function logout(): Promise<void> {
