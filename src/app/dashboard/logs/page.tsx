@@ -5,13 +5,77 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { logs, users } from '@/lib/data';
+import { logs, users, tasks } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { getCurrentUser } from '@/lib/auth';
+import type { User } from '@/types';
 
-export default function LogsPage() {
-  const allLogs = logs
+// Helper function to get all subordinates of a manager (recursively)
+const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
+  const subordinates = allUsers.filter(user => {
+    const directManager = (user.subTeam && allUsers.find(u => u.role === 'Lead' && u.subTeam === user.subTeam)?.id) ||
+                         (user.team && allUsers.find(u => u.role === 'Chair of Directors' && u.team === user.team)?.id);
+    return directManager === managerId;
+  });
+
+  const subordinateIds = subordinates.map(s => s.id);
+
+  return [
+    ...subordinateIds,
+    ...subordinateIds.flatMap(id => getSubordinates(id, allUsers))
+  ];
+};
+
+
+export default async function LogsPage() {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return null;
+
+  const getVisibleUserIds = () => {
+    switch (currentUser.role) {
+      case 'Co-founder':
+      case 'Secretary':
+        // Presidium can see everything
+        return users.map(u => u.id);
+      
+      case 'Chair of Directors':
+        // Can see their own logs, and logs of their directs and sub-directs.
+        const directorSubordinates = getSubordinates(currentUser.id, users);
+        const teamMemberIds = users.filter(u => u.team === currentUser.team).map(u => u.id);
+        return Array.from(new Set([currentUser.id, ...directorSubordinates, ...teamMemberIds]));
+
+      case 'Lead':
+        // Can see their own logs and logs of their sub-team members.
+        const leadSubordinates = getSubordinates(currentUser.id, users);
+        const subTeamMemberIds = users.filter(u => u.subTeam === currentUser.subTeam).map(u => u.id);
+        return Array.from(new Set([currentUser.id, ...leadSubordinates, ...subTeamMemberIds]));
+
+      case 'Member':
+        // Can only see logs related to tasks assigned to them.
+        return [currentUser.id];
+
+      default:
+        return [];
+    }
+  };
+
+  const visibleUserIds = getVisibleUserIds();
+  
+  const tasksAssignedToMember = tasks.filter(t => t.assignedToId === currentUser.id).map(t => t.id);
+
+  const filteredLogs = logs.filter(log => {
+    if (currentUser.role === 'Member') {
+        // Members see logs about tasks assigned to them, or actions they took.
+        return (log.taskId && tasksAssignedToMember.includes(log.taskId)) || log.userId === currentUser.id;
+    }
+    // Other roles see logs based on the user who performed the action.
+    return visibleUserIds.includes(log.userId);
+  });
+
+
+  const allLogs = filteredLogs
     .map(log => {
       const user = users.find(u => u.id === log.userId);
       return {
@@ -27,7 +91,7 @@ export default function LogsPage() {
       <CardHeader>
         <CardTitle>Activity Logs</CardTitle>
         <CardDescription>
-          A complete history of all actions and updates in the system.
+          A history of relevant actions and updates based on your role.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -57,6 +121,11 @@ export default function LogsPage() {
                 {index < allLogs.length - 1 && <Separator />}
               </div>
             ))}
+             {allLogs.length === 0 && (
+                <div className="flex items-center justify-center h-40 text-muted-foreground">
+                    No logs to display.
+                </div>
+            )}
           </div>
         </ScrollArea>
       </CardContent>

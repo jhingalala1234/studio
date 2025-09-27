@@ -7,8 +7,8 @@ export const users: User[] = [
     name: 'Sarah Lee',
     email: 'sarah.lee@cloudx.com',
     avatar: 'https://picsum.photos/seed/sarah/100/100',
-    role: 'Presidium',
-    team: null,
+    role: 'Co-founder',
+    team: 'Presidium',
     subTeam: null,
   },
   {
@@ -16,8 +16,17 @@ export const users: User[] = [
     name: 'David Kim',
     email: 'david.kim@cloudx.com',
     avatar: 'https://picsum.photos/seed/david/100/100',
-    role: 'Presidium',
-    team: null,
+    role: 'Co-founder',
+    team: 'Presidium',
+    subTeam: null,
+  },
+    {
+    id: 'user-8',
+    name: 'Jessica Chen',
+    email: 'jessica.chen@cloudx.com',
+    avatar: 'https://picsum.photos/seed/jessica/100/100',
+    role: 'Secretary',
+    team: 'Presidium',
     subTeam: null,
   },
   // Chair of Directors
@@ -67,6 +76,26 @@ export const users: User[] = [
     team: 'Technology',
     subTeam: 'ui-ux',
   },
+   // Members
+  {
+    id: 'user-9',
+    name: 'Chris Green',
+    email: 'chris.green@cloudx.com',
+    avatar: 'https://picsum.photos/seed/chris/100/100',
+    role: 'Member',
+    team: 'Technology',
+    secondaryTeam: 'Creatives',
+    subTeam: 'dev',
+  },
+  {
+    id: 'user-10',
+    name: 'Linda Hall',
+    email: 'linda.hall@cloudx.com',
+    avatar: 'https://picsum.photos/seed/linda/100/100',
+    role: 'Member',
+    team: 'Corporate',
+    subTeam: 'events',
+  },
 ];
 
 export const tasks: Task[] = [
@@ -76,10 +105,13 @@ export const tasks: Task[] = [
     description: 'Implement JWT-based authentication for the main application.',
     status: 'In Progress',
     priority: 'High',
+    urgent: true,
     assignedToId: 'user-6',
     assignedById: 'user-3',
     createdAt: '2024-07-20T10:00:00Z',
-    dueDate: '2024-08-01T23:59:59Z',
+    dueDate: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(), // Due in 12 hours
+    files: [],
+    links: [],
   },
   {
     id: 'task-2',
@@ -87,10 +119,13 @@ export const tasks: Task[] = [
     description: 'Create high-fidelity mockups for the new product marketing page.',
     status: 'To Do',
     priority: 'Medium',
+    urgent: false,
     assignedToId: 'user-7',
     assignedById: 'user-3',
     createdAt: '2024-07-21T11:30:00Z',
     dueDate: '2024-07-28T23:59:59Z',
+    files: [],
+    links: [],
   },
   {
     id: 'task-3',
@@ -98,10 +133,13 @@ export const tasks: Task[] = [
     description: 'Plan and organize the logistics for the upcoming Q3 technology summit.',
     status: 'Done',
     priority: 'High',
+    urgent: false,
     assignedToId: 'user-4',
     assignedById: 'user-1',
     createdAt: '2024-06-15T09:00:00Z',
     dueDate: '2024-07-15T23:59:59Z',
+    files: ['/path/to/final_plan.pdf'],
+    links: ['https://summit.example.com'],
   },
   {
     id: 'task-4',
@@ -109,10 +147,13 @@ export const tasks: Task[] = [
     description: 'Improve performance and readability of legacy API endpoints.',
     status: 'To Do',
     priority: 'Low',
-    assignedToId: 'user-6',
-    assignedById: 'user-3',
+    urgent: false,
+    assignedToId: 'user-9',
+    assignedById: 'user-6',
     createdAt: '2024-07-22T14:00:00Z',
     dueDate: '2024-08-15T23:59:59Z',
+    files: [],
+    links: [],
   },
   {
     id: 'task-5',
@@ -120,11 +161,28 @@ export const tasks: Task[] = [
     description: 'Design all visual assets for the upcoming social media campaign.',
     status: 'In Progress',
     priority: 'Medium',
+    urgent: false,
     assignedToId: 'user-5',
     assignedById: 'user-2',
     createdAt: '2024-07-18T16:00:00Z',
     dueDate: '2024-07-25T23:59:59Z',
+    files: [],
+    links: [],
   },
+  {
+    id: 'task-6',
+    title: 'Finalize budget for next quarter',
+    description: 'Review all department budget proposals and finalize the budget for the next quarter.',
+    status: 'To Do',
+    priority: 'High',
+    urgent: true,
+    assignedToId: 'user-8',
+    assignedById: 'user-1',
+    createdAt: '2024-07-25T09:00:00Z',
+    dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // Due in 2 days
+    files: [],
+    links: [],
+  }
 ];
 
 export const logs: Log[] = [
@@ -162,5 +220,19 @@ export const logs: Log[] = [
         timestamp: '2024-07-21T11:30:00Z',
         userId: 'user-3',
         taskId: 'task-2'
+    },
+    {
+        id: 'log-6',
+        message: 'Emily White assigned "Refactor legacy API endpoints" to Chris Green.',
+        timestamp: '2024-07-22T14:00:00Z',
+        userId: 'user-6',
+        taskId: 'task-4'
+    },
+    {
+        id: 'log-7',
+        message: 'Sarah Lee assigned "Finalize budget for next quarter" to Jessica Chen.',
+        timestamp: '2024-07-25T09:00:00Z',
+        userId: 'user-1',
+        taskId: 'task-6'
     }
 ]

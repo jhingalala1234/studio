@@ -2,6 +2,8 @@ import {
   File,
   ListFilter,
   PlusCircle,
+  AlertTriangle,
+  Flame,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,6 +39,8 @@ import { tasks, users } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { differenceInHours } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function TasksPage() {
   const getTaskWithAssignee = (task: (typeof tasks)[0]) => {
@@ -56,6 +60,10 @@ export default function TasksPage() {
     'Low': 'outline',
   } as const;
 
+  const isDeadlineApproaching = (dueDate: string) => {
+    const hoursLeft = differenceInHours(new Date(dueDate), new Date());
+    return hoursLeft >= 0 && hoursLeft < 24;
+  }
 
   return (
     <Tabs defaultValue="all">
@@ -113,42 +121,70 @@ export default function TasksPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Task</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Assignee</TableHead>
-                  <TableHead className="hidden md:table-cell">Due Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {allTasks.map(task => (
-                  <TableRow key={task.id}>
-                    <TableCell className="font-medium">{task.title}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{task.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={priorityBadgeVariant[task.priority]}>{task.priority}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={task.assigneeAvatar} />
-                            <AvatarFallback>{task.assigneeName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span>{task.assigneeName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {new Date(task.dueDate).toLocaleDateString()}
-                    </TableCell>
+            <TooltipProvider>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Task</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Assignee</TableHead>
+                    <TableHead className="hidden md:table-cell">Due Date</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {allTasks.map(task => (
+                    <TableRow key={task.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {task.title}
+                          {task.urgent && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Flame className="h-4 w-4 text-destructive" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>This task is marked as urgent.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{task.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={priorityBadgeVariant[task.priority]}>{task.priority}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                              <AvatarImage src={task.assigneeAvatar} />
+                              <AvatarFallback>{task.assigneeName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span>{task.assigneeName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <div className="flex items-center gap-2">
+                          <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                          {isDeadlineApproaching(task.dueDate) && task.status !== 'Done' && (
+                             <Tooltip>
+                              <TooltipTrigger>
+                                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Deadline is approaching (less than 24 hours left).</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TooltipProvider>
           </CardContent>
         </Card>
       </TabsContent>

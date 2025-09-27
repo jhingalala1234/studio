@@ -1,6 +1,6 @@
-export type UserRole = 'Presidium' | 'Chair of Directors' | 'Lead' | 'Member';
+export type UserRole = 'Co-founder' | 'Secretary' | 'Chair of Directors' | 'Lead' | 'Member';
 
-export type Team = 'Technology' | 'Corporate' | 'Creatives';
+export type Team = 'Technology' | 'Corporate' | 'Creatives' | 'Presidium';
 
 export type SubTeam =
   | 'dev'
@@ -22,6 +22,7 @@ export interface User {
   avatar: string;
   role: UserRole;
   team: Team | null;
+  secondaryTeam?: Team | null;
   subTeam: SubTeam | null;
 }
 
@@ -35,10 +36,13 @@ export interface Task {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
+  urgent: boolean;
   assignedToId: string;
   assignedById: string;
   createdAt: string;
   dueDate: string;
+  files: string[];
+  links: string[];
 }
 
 export interface Log {
