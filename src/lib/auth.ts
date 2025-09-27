@@ -1,7 +1,9 @@
 // This is a server-side file.
 'use server';
 import { cookies } from 'next/headers';
-import { users, type User } from '@/lib/data';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from './firebase';
+import type { User } from '@/types';
 
 const FAKE_SESSION_COOKIE = 'cxc_session';
 
@@ -11,17 +13,33 @@ export async function getCurrentUser(): Promise<User | null> {
     if (sessionCookie) {
         try {
             const user = JSON.parse(sessionCookie.value) as User;
-            // Re-fetch user from data source to ensure it's not stale
-            const currentUser = users.find(u => u.id === user.id);
+            const usersRef = collection(db, "users");
+            const q = query(usersRef, where("id", "==", user.id));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                return null;
+            }
+            
+            const currentUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
             return currentUser || null;
         } catch {
             // Invalid cookie, treat as logged out
             return null;
         }
     }
-    // For demo purposes, if no one is logged in, default to the Director of Technology
-    const defaultUser = users.find(u => u.email === 'demo@demo.com');
-    return defaultUser || users[0];
+    
+    // For demo purposes, if no one is logged in, default to a user
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("username", "==", "Tanishpoddar.18"));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return null;
+    }
+
+    const defaultUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
+    return defaultUser;
 }
 
 export async function logout(): Promise<void> {

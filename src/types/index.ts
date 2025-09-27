@@ -18,6 +18,8 @@ export type SubTeam =
 export interface User {
   id: string;
   name: string;
+  username: string;
+  password?: string; // Should be handled securely, not stored plaintext
   email: string;
   avatar: string;
   role: UserRole;

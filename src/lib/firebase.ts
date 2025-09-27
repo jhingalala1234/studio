@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { initializeApp, getApps } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -10,12 +11,21 @@ const firebaseConfig = {
   apiKey: "AIzaSyD-kMfX1zbsDDriMrrjHuK2RkKqeqxObvk",
   authDomain: "cloudx-central-dashboard.firebaseapp.com",
   projectId: "cloudx-central-dashboard",
-  storageBucket: "cloudx-central-dashboard.firebasestorage.app",
+  storageBucket: "cloudx-central-dashboard.appspot.com",
   messagingSenderId: "1059425045441",
   appId: "1:1059425045441:web:e34e43e9d905b9ff8f3d40",
   measurementId: "G-HF7FC400N0"
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-// const analytics = getAnalytics(app);
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
+
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+export { app, db, storage };

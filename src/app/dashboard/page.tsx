@@ -26,11 +26,22 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getCurrentUser } from '@/lib/auth';
-import { users, tasks, logs } from '@/lib/data';
 import { TaskChart } from './task-chart';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Task, User, Log } from '@/types';
 
 export default async function Dashboard() {
   const user = await getCurrentUser();
+
+  const usersSnapshot = await getDocs(collection(db, "users"));
+  const users: User[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+  
+  const tasksSnapshot = await getDocs(collection(db, "tasks"));
+  const tasks: Task[] = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+
+  const logsSnapshot = await getDocs(collection(db, "logs"));
+  const logs: Log[] = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Log));
 
   const myTasks = tasks.filter(t => t.assignedToId === user?.id);
   const teamTasks = tasks.filter(t => {
