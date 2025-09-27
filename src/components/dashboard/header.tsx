@@ -2,11 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  Bell,
-  Menu,
-  Search,
-} from 'lucide-react';
+import { Bell, Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -31,23 +27,32 @@ const navItems = [
 ];
 
 export function Header({ user }: { user: User }) {
-  const userInitials = user.name.split(' ').map(n => n[0]).join('');
+  const userInitials = user.name.split(' ').map((n) => n[0]).join('');
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 flex flex-col items-center gap-4 border-b bg-background/80 px-4 py-2 backdrop-blur-lg md:px-6">
-      {/* Top Row: Logo, Search, Actions */}
-      <div className="flex w-full items-center">
+    <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black/50 backdrop-blur-lg">
+      {/* Top Row: Centered Logo */}
+      <div className="w-full px-4 py-4 md:px-6">
+        <div className="flex items-center justify-center">
+           <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+            <Logo />
+          </Link>
+        </div>
+      </div>
+
+      {/* Bottom Row: Navigation and Actions */}
+      <nav className="flex w-full items-center justify-between border-t border-white/10 px-4 py-2 md:px-6">
         {/* Mobile Nav Trigger (Left) */}
         <div className="md:hidden">
-           <Sheet>
+          <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="shrink-0">
+              <Button variant="ghost" size="icon" className="shrink-0">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left">
+            <SheetContent side="left" className="bg-background/95">
               <nav className="grid gap-6 text-lg font-medium">
                 <Link
                   href="#"
@@ -61,7 +66,9 @@ export function Header({ user }: { user: User }) {
                     href={href}
                     className={cn(
                       'transition-colors hover:text-foreground',
-                       pathname === href ? 'text-foreground' : 'text-muted-foreground'
+                      pathname === href
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
                     )}
                   >
                     {label}
@@ -72,39 +79,42 @@ export function Header({ user }: { user: User }) {
           </Sheet>
         </div>
 
-        {/* Centered Logo */}
-        <div className="flex-1 flex justify-center md:flex-none">
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <Logo />
-          </Link>
+        {/* Desktop Navigation Links (Left) */}
+        <div className="hidden items-center gap-6 md:flex">
+          {navItems.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'text-sm font-medium transition-colors hover:text-primary',
+                pathname === href
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              )}
+            >
+              {label}
+            </Link>
+          ))}
         </div>
 
-        {/* Right-aligned controls */}
-        <div className="flex flex-1 items-center justify-end gap-4 md:gap-2 lg:gap-4">
+        {/* Right-aligned Actions */}
+        <div className="flex items-center justify-end gap-4">
           <form className="hidden sm:block">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search..."
-                className="pl-8 sm:w-[200px] lg:w-[300px] bg-transparent"
+                className="w-full rounded-lg bg-background/80 pl-8 md:w-[200px] lg:w-[300px]"
               />
             </div>
           </form>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Bell className="h-5 w-5" />
-                <span className="sr-only">Toggle notifications</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>New task assigned: "Deploy to Production"</DropdownMenuItem>
-              <DropdownMenuItem>Team member completed a task.</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <Bell className="h-5 w-5" />
+            <span className="sr-only">Toggle notifications</span>
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
@@ -129,22 +139,6 @@ export function Header({ user }: { user: User }) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
-
-      {/* Bottom Row: Desktop Navigation */}
-      <nav className="hidden md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-        {navItems.map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              'transition-colors hover:text-foreground',
-              pathname === href ? 'text-foreground' : 'text-muted-foreground'
-            )}
-          >
-            {label}
-          </Link>
-        ))}
       </nav>
     </header>
   );
