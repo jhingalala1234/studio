@@ -1,10 +1,10 @@
 import {
   File,
   ListFilter,
-  PlusCircle,
   AlertTriangle,
   Flame,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -42,6 +42,8 @@ import { differenceInHours } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getAllTasks, getAllUsers } from '@/lib/data';
 import type { Task, User } from '@/types';
+import { CreateTaskDialog } from './create-task-dialog';
+
 
 export default async function TasksPage() {
   const users = await getAllUsers();
@@ -108,12 +110,7 @@ export default async function TasksPage() {
               Export
             </span>
           </Button>
-          <Button size="sm" className="h-8 gap-1">
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              Add Task
-            </span>
-          </Button>
+          <CreateTaskDialog users={users} />
         </div>
       </div>
       <TabsContent value="all">
@@ -140,19 +137,21 @@ export default async function TasksPage() {
                   {allTasks.map(task => (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {task.title}
-                          {task.urgent && (
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Flame className="h-4 w-4 text-destructive" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>This task is marked as urgent.</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
+                        <Link href={`/dashboard/tasks/${task.id}`} className="hover:underline">
+                          <div className="flex items-center gap-2">
+                            {task.title}
+                            {task.urgent && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Flame className="h-4 w-4 text-destructive" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>This task is marked as urgent.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </Link>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{task.status}</Badge>
