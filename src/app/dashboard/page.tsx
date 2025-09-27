@@ -57,10 +57,11 @@ export default async function Dashboard() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 md:gap-8">
-      <div className="flex items-center">
-        <h1 className="font-headline text-lg font-semibold md:text-2xl">
+      <div className="flex flex-col">
+        <h1 className="font-headline text-3xl font-bold md:text-4xl">
           Welcome back, {user?.name.split(' ')[0]}!
         </h1>
+        <p className="text-lg text-muted-foreground">You are the {user?.role} at CloudX.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
         <Card>

@@ -69,5 +69,14 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    background-color: #000;
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--primary) / 0.1), #000 2px);
+    background-size: 2rem 2rem;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/10 bg-white/5 backdrop-blur-lg;
   }
 }
