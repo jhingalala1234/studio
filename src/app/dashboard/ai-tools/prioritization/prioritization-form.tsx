@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useFormStatus, useFormState } from 'react-dom';
 import { prioritizeTask, PrioritizeTaskOutput } from '@/ai/flows/ai-task-prioritization';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,42 +32,47 @@ function SubmitButton() {
   );
 }
 
-export function PrioritizationForm() {
-  const [result, setResult] = useState<PrioritizeTaskOutput | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+type State = {
+  result: PrioritizeTaskOutput | null;
+  error: string | null;
+}
 
-  async function handleSubmit(formData: FormData) {
-    setLoading(true);
-    setResult(null);
-    setError(null);
-    
+async function handlePrioritize(prevState: State, formData: FormData): Promise<State> {
     const taskDescription = formData.get('taskDescription') as string;
     if (!taskDescription) {
-      setError("Task description cannot be empty.");
-      setLoading(false);
-      return;
+      return { ...prevState, error: "Task description cannot be empty." };
     }
     
-    const response = await prioritizeTask({ taskDescription });
-    
-    if (response && response.priority) {
-      setResult(response);
-    } else {
-      setError("Failed to get a priority from the AI. Please try again.");
+    try {
+        const response = await prioritizeTask({ taskDescription });
+        
+        if (response && response.priority) {
+          return { result: response, error: null };
+        } else {
+          return { ...prevState, error: "Failed to get a priority from the AI. Please try again."};
+        }
+    } catch (e) {
+        return { ...prevState, error: "An unexpected error occurred. Please try again."};
     }
-    setLoading(false);
-  }
+}
+
+
+export function PrioritizationForm() {
+  const initialState: State = { result: null, error: null };
+  const [state, formAction] = useFormState(handlePrioritize, initialState);
 
   const priorityBadgeVariant = {
     'High': 'destructive',
     'Medium': 'secondary',
     'Low': 'outline',
   } as const;
+  
+  const { pending } = useFormStatus();
+
 
   return (
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-      <form action={handleSubmit} className="space-y-4">
+      <form action={formAction} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="taskDescription" className="text-base">Task Description</Label>
           <Textarea
@@ -78,10 +83,10 @@ export function PrioritizationForm() {
             required
           />
         </div>
-        {error && (
+        {state.error && (
             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{state.error}</AlertDescription>
             </Alert>
         )}
         <div className="flex justify-end">
@@ -95,7 +100,7 @@ export function PrioritizationForm() {
             <CardTitle>AI Prioritization Result</CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {pending ? (
               <div className="space-y-4">
                 <div className="space-y-2">
                     <Skeleton className="h-4 w-20" />
@@ -106,17 +111,17 @@ export function PrioritizationForm() {
                     <Skeleton className="h-16 w-full" />
                 </div>
               </div>
-            ) : result ? (
+            ) : state.result ? (
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Priority</h3>
-                  <Badge variant={priorityBadgeVariant[result.priority as keyof typeof priorityBadgeVariant]} className="text-lg">
-                    {result.priority}
+                  <Badge variant={priorityBadgeVariant[state.result.priority as keyof typeof priorityBadgeVariant]} className="text-lg">
+                    {state.result.priority}
                   </Badge>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Reason</h3>
-                  <p className="text-foreground">{result.reason}</p>
+                  <p className="text-foreground">{state.result.reason}</p>
                 </div>
               </div>
             ) : (
