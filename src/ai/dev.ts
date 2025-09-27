@@ -1,1 +1,5 @@
-// Flows will be imported for their side effects in this file.
+import { config } from 'dotenv';
+config();
+
+import '@/ai/flows/generate-task-summary.ts';
+import '@/ai/flows/ai-task-prioritization.ts';
