@@ -8,33 +8,14 @@ import type { User } from '@/types';
 const FAKE_SESSION_COOKIE = 'cxc_session';
 
 export async function getCurrentUser(): Promise<User | null> {
-    const sessionCookie = cookies().get(FAKE_SESSION_COOKIE);
-
-    if (sessionCookie) {
-        try {
-            const user = JSON.parse(sessionCookie.value) as User;
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("id", "==", user.id));
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
-                return null;
-            }
-            
-            const currentUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
-            return currentUser || null;
-        } catch {
-            // Invalid cookie, treat as logged out
-            return null;
-        }
-    }
-    
     // For demo purposes, if no one is logged in, default to a user
     const usersRef = collection(db, "users");
+    // Defaulting to 'Tanishpoddar.18' as the logged-in user
     const q = query(usersRef, where("username", "==", "Tanishpoddar.18"));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
+        console.error("Default user 'Tanishpoddar.18' not found in Firestore. Please seed the database.");
         return null;
     }
 
@@ -43,5 +24,6 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export async function logout(): Promise<void> {
+  // This function is kept for potential future use but does nothing without a session cookie.
   cookies().delete(FAKE_SESSION_COOKIE);
 }

@@ -4,13 +4,15 @@ import 'dotenv/config';
 
 // IMPORTANT: Replace with your actual service account key JSON file path
 // You can download this from your Firebase project settings
-const serviceAccount = JSON.parse(
-  process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
-);
+const serviceAccount = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+}
 
 initializeApp({
   credential: cert(serviceAccount),
-  projectId: serviceAccount.project_id,
+  projectId: serviceAccount.projectId,
 });
 
 const db = getFirestore();
