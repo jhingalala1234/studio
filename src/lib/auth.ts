@@ -8,8 +8,7 @@ import type { User } from '@/types';
 const FAKE_SESSION_COOKIE = 'cxc_session';
 
 export async function getCurrentUser(): Promise<User | null> {
-    const cookieStore = cookies();
-    const sessionCookie = cookieStore.get(FAKE_SESSION_COOKIE);
+    const sessionCookie = cookies().get(FAKE_SESSION_COOKIE);
 
     if (sessionCookie) {
         try {
