@@ -40,16 +40,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { differenceInHours } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getAllTasks, getAllUsers } from '@/lib/data';
 import type { Task, User } from '@/types';
 
 export default async function TasksPage() {
-  const usersSnapshot = await getDocs(collection(db, "users"));
-  const users: User[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-  
-  const tasksSnapshot = await getDocs(collection(db, "tasks"));
-  const tasks: Task[] = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+  const users = await getAllUsers();
+  const tasks = await getAllTasks();
 
   const getTaskWithAssignee = (task: Task) => {
     const assignee = users.find(u => u.id === task.assignedToId);

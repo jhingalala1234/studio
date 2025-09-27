@@ -10,8 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { getCurrentUser } from '@/lib/auth';
 import type { User, Log, Task } from '@/types';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getAllUsers, getAllTasks, getAllLogs } from '@/lib/data';
 
 // Helper function to get all subordinates of a manager (recursively)
 const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
@@ -34,14 +33,9 @@ export default async function LogsPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser) return null;
 
-  const usersSnapshot = await getDocs(collection(db, "users"));
-  const users: User[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-  
-  const tasksSnapshot = await getDocs(collection(db, "tasks"));
-  const tasks: Task[] = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-
-  const logsSnapshot = await getDocs(collection(db, "logs"));
-  const logs: Log[] = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Log));
+  const users = await getAllUsers();
+  const tasks = await getAllTasks();
+  const logs = await getAllLogs();
 
 
   const getVisibleUserIds = () => {
