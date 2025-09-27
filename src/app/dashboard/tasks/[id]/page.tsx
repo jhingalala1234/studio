@@ -18,7 +18,7 @@ import {
   AlertTriangle,
   Flame,
   Paperclip,
-  Link,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -28,6 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import Link from 'next/link';
 
 export default async function TaskDetailsPage({ params }: { params: { id: string } }) {
   const task = await getTaskById(params.id);
@@ -77,7 +78,7 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
       </header>
 
       <div className="grid gap-8 md:grid-cols-3">
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 space-y-8">
           <Card>
             <CardHeader>
               <CardTitle>Task Description</CardTitle>
@@ -86,6 +87,34 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
               <p className="text-muted-foreground">{task.description || 'No description provided.'}</p>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Attachments</CardTitle>
+              <CardDescription>Files and links submitted for this task.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className='flex items-center gap-3'>
+                    <Paperclip className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                    <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">Files</span>
+                        {task.files.length > 0 ? task.files.map(file => (
+                            <Link key={file} href={file} target="_blank" className="text-sm text-primary hover:underline">{file.split('/').pop()}</Link>
+                        )) : <p className='text-sm text-muted-foreground'>No files attached.</p>}
+                    </div>
+                </div>
+                <Separator />
+                 <div className='flex items-center gap-3'>
+                    <LinkIcon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                    <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">Links</span>
+                        {task.links.length > 0 ? task.links.map(link => (
+                            <Link key={link} href={link} target="_blank" className="text-sm text-primary hover:underline">{link}</Link>
+                        )) : <p className='text-sm text-muted-foreground'>No links attached.</p>}
+                    </div>
+                </div>
+            </CardContent>
+          </Card>
+
         </div>
 
         <div className="space-y-6">

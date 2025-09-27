@@ -2,15 +2,17 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { redirect } from 'next/navigation';
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 
 const taskSchema = z.object({
-  title: z.string().min(1),
+  title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  assignedToId: z.string().min(1),
+  assignedToId: z.string().min(1, "Please assign the task to a user"),
   priority: z.enum(["Low", "Medium", "High"]),
-  dueDate: z.date(),
+  dueDate: z.date({ required_error: "A due date is required." }),
+  urgent: z.boolean().default(false),
 });
 
 export async function addTask(data: z.infer<typeof taskSchema>) {
@@ -18,6 +20,12 @@ export async function addTask(data: z.infer<typeof taskSchema>) {
   if (!currentUser) {
     throw new Error("You must be logged in to add a task.");
   }
+  
+  // Basic permission check
+  if(currentUser.role === 'Member') {
+    throw new Error("You do not have permission to create tasks.");
+  }
+
 
   const validatedData = taskSchema.parse(data);
 
@@ -25,7 +33,6 @@ export async function addTask(data: z.infer<typeof taskSchema>) {
     ...validatedData,
     id: '', // Firestore will generate this
     status: "To Do",
-    urgent: false, // Default value
     assignedById: currentUser.id,
     createdAt: new Date().toISOString(),
     dueDate: validatedData.dueDate.toISOString(),
@@ -49,4 +56,5 @@ export async function addTask(data: z.infer<typeof taskSchema>) {
 
   revalidatePath("/dashboard/tasks");
   revalidatePath("/dashboard");
+  redirect('/dashboard/tasks');
 }

@@ -3,6 +3,7 @@ import {
   ListFilter,
   AlertTriangle,
   Flame,
+  PlusCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -42,10 +43,11 @@ import { differenceInHours } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getAllTasks, getAllUsers } from '@/lib/data';
 import type { Task, User } from '@/types';
-import { CreateTaskDialog } from './create-task-dialog';
+import { getCurrentUser } from '@/lib/auth';
 
 
 export default async function TasksPage() {
+  const currentUser = await getCurrentUser();
   const users = await getAllUsers();
   const tasks = await getAllTasks();
 
@@ -70,6 +72,8 @@ export default async function TasksPage() {
     const hoursLeft = differenceInHours(new Date(dueDate), new Date());
     return hoursLeft >= 0 && hoursLeft < 24;
   }
+
+  const canCreateTask = currentUser?.role !== 'Member';
 
   return (
     <Tabs defaultValue="all">
@@ -110,7 +114,16 @@ export default async function TasksPage() {
               Export
             </span>
           </Button>
-          <CreateTaskDialog users={users} />
+          {canCreateTask && (
+             <Button size="sm" className="h-8 gap-1" asChild>
+                <Link href="/dashboard/tasks/create">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        Add Task
+                    </span>
+                </Link>
+             </Button>
+          )}
         </div>
       </div>
       <TabsContent value="all">
