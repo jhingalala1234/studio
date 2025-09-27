@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useFormStatus, useFormState } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { prioritizeTask, PrioritizeTaskOutput } from '@/ai/flows/ai-task-prioritization';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -59,16 +59,13 @@ async function handlePrioritize(prevState: State, formData: FormData): Promise<S
 
 export function PrioritizationForm() {
   const initialState: State = { result: null, error: null };
-  const [state, formAction] = useFormState(handlePrioritize, initialState);
+  const [state, formAction] = useActionState(handlePrioritize, initialState);
 
   const priorityBadgeVariant = {
     'High': 'destructive',
     'Medium': 'secondary',
     'Low': 'outline',
   } as const;
-  
-  const { pending } = useFormStatus();
-
 
   return (
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -100,18 +97,7 @@ export function PrioritizationForm() {
             <CardTitle>AI Prioritization Result</CardTitle>
           </CardHeader>
           <CardContent>
-            {pending ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-8 w-32" />
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-16 w-full" />
-                </div>
-              </div>
-            ) : state.result ? (
+            {state.result ? (
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Priority</h3>
