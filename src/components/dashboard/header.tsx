@@ -31,9 +31,9 @@ export function Header({ user }: { user: User }) {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black">
+    <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black/50 backdrop-blur-lg">
       {/* Top Row: Centered Logo */}
-      <div className="w-full px-4 py-4 md:px-6">
+      <div className="w-full max-w-7xl px-4 py-4 md:px-6">
         <div className="flex items-center justify-center">
            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
             <Logo />
@@ -42,7 +42,7 @@ export function Header({ user }: { user: User }) {
       </div>
 
       {/* Bottom Row: Navigation and Actions */}
-      <nav className="flex w-full items-center justify-between border-t border-white/10 px-4 py-2 md:px-6">
+      <nav className="flex w-full items-center border-t border-white/10 px-4 py-2 md:px-6">
         {/* Mobile Nav Trigger (Left) */}
         <div className="md:hidden">
           <Sheet>
@@ -80,19 +80,20 @@ export function Header({ user }: { user: User }) {
         </div>
 
         {/* Desktop Navigation Links (Centered) */}
-        <div className="hidden flex-1 items-center justify-center gap-4 md:flex">
+        <div className="hidden flex-1 items-center justify-center gap-6 md:flex">
           {navItems.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
               className={cn(
-                'rounded-md px-3 py-1 text-sm font-medium transition-all hover:bg-white/10 hover:text-white',
-                pathname === href
-                  ? 'bg-white/5 text-white'
-                  : 'text-muted-foreground'
+                'relative rounded-md px-3 py-1 text-sm font-medium text-muted-foreground transition-all duration-300 hover:text-white',
+                 pathname === href && 'text-white'
               )}
             >
               {label}
+              {pathname === href && (
+                <span className="absolute inset-x-1 -bottom-2 h-0.5 rounded-full bg-primary transition-all"></span>
+              )}
             </Link>
           ))}
         </div>

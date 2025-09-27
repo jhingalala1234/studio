@@ -77,6 +77,6 @@ body {
 
 @layer components {
   .glass {
-    @apply border border-white/10 bg-white/5 backdrop-blur-lg;
+    @apply border border-white/10 bg-black/30 backdrop-blur-lg;
   }
 }
