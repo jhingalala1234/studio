@@ -1,9 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getCurrentUser } from './lib/auth';
 
-// Force Node.js runtime instead of edge
-export const runtime = 'nodejs';
-
 export async function middleware(request: NextRequest) {
   const currentUser = await getCurrentUser();
   const { pathname } = request.nextUrl;
