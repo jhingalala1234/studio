@@ -45,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -67,6 +68,7 @@ export default function CreateTaskPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedTeams, setSelectedTeams] = useState<Team[]>([]);
     const [selectedRoles, setSelectedRoles] = useState<UserRole[]>([]);
+    const [openAssignee, setOpenAssignee] = useState(false);
 
     const { toast } = useToast();
     const router = useRouter();
@@ -186,7 +188,7 @@ export default function CreateTaskPage() {
                   </CardDescription>
               </CardHeader>
           </Card>
-      )
+      );
   }
 
   if (!currentUser || currentUser.role === 'Member') {
@@ -199,7 +201,7 @@ export default function CreateTaskPage() {
                     </CardDescription>
                 </CardHeader>
             </Card>
-        )
+        );
     }
 
   return (
@@ -249,58 +251,51 @@ export default function CreateTaskPage() {
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Assign To</FormLabel>
-                                <Popover>
+                                <Popover open={openAssignee} onOpenChange={setOpenAssignee}>
                                     <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant="outline"
-                                                role="combobox"
-                                                className={cn(
-                                                "w-full justify-between",
-                                                !field.value.length && "text-muted-foreground"
-                                                )}
-                                            >
-                                                <div className="flex gap-1 flex-wrap">
-                                                    {field.value.length > 0 ? (
-                                                        field.value.length > 2 ? (
-                                                            <Badge variant="secondary">{`${field.value.length} users selected`}</Badge>
-                                                        ) : (
-                                                            allUsers
-                                                                .filter(u => field.value.includes(u.id))
-                                                                .map(u => <Badge key={u.id} variant="secondary">{u.name}</Badge>)
-                                                        )
-                                                    ) : "Select users..."}
-                                                </div>
-                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                        </FormControl>
+                                        <div className="flex min-h-10 w-full items-center gap-1 rounded-md border border-input p-2">
+                                            <div className="flex flex-wrap gap-1">
+                                                {field.value.map(userId => {
+                                                    const user = allUsers.find(u => u.id === userId);
+                                                    return (
+                                                        <Badge key={userId} variant="secondary" className="gap-1.5">
+                                                            {user?.name}
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    field.onChange(field.value.filter(id => id !== userId));
+                                                                }}
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        </Badge>
+                                                    );
+                                                })}
+                                            </div>
+                                            <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                                        </div>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                         <ScrollArea className="h-72">
-                                            {assignableUsers.map((user) => (
-                                                <div
-                                                    key={user.id}
-                                                    className="flex flex-row items-center space-x-3 space-y-0 px-4 py-2 hover:bg-muted/50"
-                                                >
-                                                    <Checkbox
-                                                        id={user.id}
-                                                        checked={field.value?.includes(user.id)}
-                                                        onCheckedChange={(checked) => {
-                                                        return checked
-                                                            ? field.onChange([...field.value, user.id])
-                                                            : field.onChange(
-                                                                field.value?.filter(
-                                                                (value) => value !== user.id
-                                                                )
-                                                            )
-                                                        }}
-                                                    />
-                                                    <label htmlFor={user.id} className="font-normal flex-1 cursor-pointer">
-                                                        {user.name} <span className="text-muted-foreground">({user.role})</span>
-                                                    </label>
-                                                </div>
-                                            ))}
-                                         </ScrollArea>
+                                         <Command>
+                                            <CommandInput placeholder="Search users..." />
+                                            <CommandList>
+                                                <CommandEmpty>No users found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {assignableUsers.filter(u => !field.value.includes(u.id)).map((user) => (
+                                                        <CommandItem
+                                                            key={user.id}
+                                                            onSelect={() => {
+                                                                field.onChange([...field.value, user.id]);
+                                                                setOpenAssignee(false);
+                                                            }}
+                                                        >
+                                                          {user.name} <span className="ml-2 text-muted-foreground">({user.role === 'Chair of Directors' ? 'Director' : user.role})</span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                         </Command>
                                     </PopoverContent>
                                 </Popover>
                                 <FormMessage />
@@ -409,7 +404,7 @@ export default function CreateTaskPage() {
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Minute" />
-                                                    </SelectTrigger>
+                                                    </Trigger>
                                                 </FormControl>
                                                 <SelectContent>
                                                     {Array.from({length: 60}, (_, i) => i.toString().padStart(2,'0')).map(min => <SelectItem key={min} value={min}>{min}</SelectItem>)}
