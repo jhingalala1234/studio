@@ -61,7 +61,11 @@ export async function addTask(data: FormData) {
           await fileRef.save(fileBuffer, {
               metadata: { contentType: file.type }
           });
-          const downloadUrl = await getDownloadURL(fileRef);
+          
+          // Make the file public before getting the URL
+          await fileRef.makePublic();
+
+          const downloadUrl = getDownloadURL(fileRef);
           fileUrls.push(downloadUrl);
         }
       }
