@@ -9,6 +9,17 @@ import { Badge } from '@/components/ui/badge';
 export function UserCard({ user }: { user: User }) {
   const userInitials = user.name.split(' ').map(n => n[0]).join('');
 
+  const getPosition = (user: User) => {
+    if (user.role === 'Chair of Directors' && user.team) {
+      return `Director of ${user.team}`;
+    }
+     if (user.role === 'Lead' && user.subTeam) {
+        const subTeamName = user.subTeam.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        return `${subTeamName} Lead`;
+    }
+    return user.role;
+  }
+
   return (
     <Link href={`/dashboard/users/${user.id}`} className="group">
         <Card className="glass h-full transition-all duration-300 ease-in-out group-hover:border-primary group-hover:shadow-lg group-hover:-translate-y-1">
@@ -19,8 +30,8 @@ export function UserCard({ user }: { user: User }) {
                 </Avatar>
                 <div className="space-y-1">
                     <h3 className="font-semibold">{user.name}</h3>
-                    <p className="text-sm text-muted-foreground">{user.role}</p>
-                    {user.subTeam && <Badge variant="secondary" className="mt-2">{user.subTeam}</Badge>}
+                    <p className="text-sm text-muted-foreground">{getPosition(user)}</p>
+                    {user.team && <Badge variant="secondary" className="mt-2">{user.team}</Badge>}
                 </div>
             </CardContent>
         </Card>

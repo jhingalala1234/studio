@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { getAllUsers } from '@/lib/data';
 import {
   Card,
@@ -7,30 +6,34 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { UserCard } from './user-card';
+import type { User, Team } from '@/types';
+
+const TeamSection = ({ title, users }: { title: string; users: User[] }) => {
+  if (users.length === 0) return null;
+  return (
+    <div>
+      <h2 className="mb-4 font-headline text-2xl font-bold">{title}</h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {users.sort((a,b) => a.name.localeCompare(b.name)).map(user => <UserCard key={user.id} user={user} />)}
+      </div>
+    </div>
+  );
+};
 
 export default async function UsersPage() {
   const users = await getAllUsers();
-  
-  // Group users by team
-  const teams = users.reduce((acc, user) => {
-    const team = user.team || 'No Team';
-    if (!acc[team]) {
-      acc[team] = [];
-    }
-    acc[team].push(user);
-    return acc;
-  }, {} as Record<string, typeof users>);
 
-  const presidium = teams['Presidium'] || [];
-  const technology = teams['Technology'] || [];
-  const corporate = teams['Corporate'] || [];
-  const creatives = teams['Creatives'] || [];
+  const presidium = users.filter(u => u.role === 'Co-founder' || u.role === 'Secretary');
+  const directors = users.filter(u => u.role === 'Chair of Directors');
+  const leads = users.filter(u => u.role === 'Lead');
+  const members = users.filter(u => u.role === 'Member');
 
+  const technologyMembers = members.filter(u => u.team === 'Technology');
+  const corporateMembers = members.filter(u => u.team === 'Corporate');
+  const creativesMembers = members.filter(u => u.team === 'Creatives');
 
   return (
     <div className="space-y-8">
@@ -42,51 +45,32 @@ export default async function UsersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search users..." className="pl-8 w-full max-w-sm" />
-            </div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users..."
+              className="w-full max-w-sm pl-8"
+            />
+          </div>
         </CardContent>
       </Card>
-      
+
       <div className="space-y-8">
-        {presidium.length > 0 && (
-          <div>
-            <h2 className="mb-4 font-headline text-2xl font-bold">Presidium</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {presidium.map(user => <UserCard key={user.id} user={user} />)}
-            </div>
-          </div>
-        )}
-
-        {technology.length > 0 && (
-            <div>
-                <h2 className="mb-4 font-headline text-2xl font-bold">Technology</h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {technology.map(user => <UserCard key={user.id} user={user} />)}
-                </div>
-            </div>
-        )}
-
-        {corporate.length > 0 && (
-            <div>
-                <h2 className="mb-4 font-headline text-2xl font-bold">Corporate</h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {corporate.map(user => <UserCard key={user.id} user={user} />)}
-                </div>
-            </div>
-        )}
-
-        {creatives.length > 0 && (
-            <div>
-                <h2 className="mb-4 font-headline text-2xl font-bold">Creatives</h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {creatives.map(user => <UserCard key={user.id} user={user} />)}
-                </div>
-            </div>
+        <TeamSection title="Presidium" users={presidium} />
+        <TeamSection title="Directors" users={directors} />
+        <TeamSection title="Leads" users={leads} />
+        
+        {members.length > 0 && (
+           <div>
+            <h2 className="mb-4 font-headline text-2xl font-bold">Members</h2>
+             <div className="space-y-6">
+                <TeamSection title="Technology" users={technologyMembers} />
+                <TeamSection title="Corporate" users={corporateMembers} />
+                <TeamSection title="Creatives" users={creativesMembers} />
+             </div>
+           </div>
         )}
       </div>
-
     </div>
   );
 }
