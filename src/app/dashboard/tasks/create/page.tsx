@@ -36,7 +36,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { getAllUsers } from '@/lib/data';
 import { getCurrentUser } from '@/lib/auth';
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -95,6 +94,9 @@ export default function CreateTaskPage() {
                 const [user, users] = await Promise.all([getCurrentUser(), getAllUsers()]);
                 setCurrentUser(user);
                 setAllUsers(users);
+                if (user?.role === 'Member') {
+                    form.setValue('assignedToIds', [user.id]);
+                }
             } catch (error) {
                 console.error("Failed to fetch data", error);
                 toast({ variant: "destructive", title: "Error", description: "Failed to load necessary data." });
@@ -103,23 +105,26 @@ export default function CreateTaskPage() {
             }
         }
         fetchData();
-    }, [toast]);
+    }, [toast, form]);
 
     const assignableUsers = useMemo(() => {
         if (!currentUser) return [];
-        const userRole = currentUser.role;
+
+        if (currentUser.role === 'Member') {
+            return allUsers.filter(u => u.id === currentUser.id);
+        }
 
         let availableUsers: User[] = [];
 
-        if (userRole === 'Co-founder' || userRole === 'Secretary') {
+        if (currentUser.role === 'Co-founder' || currentUser.role === 'Secretary') {
             availableUsers = allUsers.filter(u => u.team !== 'Presidium');
-        } else if (userRole === 'Chair of Directors') {
+        } else if (currentUser.role === 'Chair of Directors') {
             availableUsers = allUsers.filter(u => u.team === currentUser.team && (u.role === 'Lead' || u.role === 'Member'));
-        } else if (userRole === 'Lead') {
+        } else if (currentUser.role === 'Lead') {
             availableUsers = allUsers.filter(u => u.subTeam === currentUser.subTeam && u.role === 'Member');
         }
 
-        if ((selectedTeams.length > 0 || selectedRoles.length > 0) && (userRole === 'Co-founder' || userRole === 'Secretary')) {
+        if ((selectedTeams.length > 0 || selectedRoles.length > 0) && (currentUser.role === 'Co-founder' || currentUser.role === 'Secretary')) {
              return availableUsers.filter(user => {
                 const teamMatch = selectedTeams.length === 0 || (user.team && selectedTeams.includes(user.team));
                 const roleMatch = selectedRoles.length === 0 || selectedRoles.includes(user.role);
@@ -191,7 +196,7 @@ export default function CreateTaskPage() {
       );
   }
 
-  if (!currentUser || currentUser.role === 'Member') {
+  if (!currentUser) {
         return (
             <Card className="max-w-3xl mx-auto">
                  <CardHeader>
@@ -253,28 +258,37 @@ export default function CreateTaskPage() {
                                 <FormLabel>Assign To</FormLabel>
                                 <Popover open={openAssignee} onOpenChange={setOpenAssignee}>
                                     <PopoverTrigger asChild>
-                                        <div className="flex min-h-10 w-full items-center gap-1 rounded-md border border-input p-2">
+                                        <button
+                                            type="button"
+                                            role="combobox"
+                                            aria-expanded={openAssignee}
+                                            className="flex min-h-10 w-full items-center gap-1 rounded-md border border-input p-2 text-left"
+                                            disabled={currentUser?.role === 'Member'}
+                                        >
                                             <div className="flex flex-wrap gap-1">
+                                                {field.value.length === 0 && <span className="text-muted-foreground">Select users...</span>}
                                                 {field.value.map(userId => {
                                                     const user = allUsers.find(u => u.id === userId);
                                                     return (
                                                         <Badge key={userId} variant="secondary" className="gap-1.5">
                                                             {user?.name}
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    field.onChange(field.value.filter(id => id !== userId));
-                                                                }}
-                                                            >
-                                                                <X className="h-3 w-3" />
-                                                            </button>
+                                                            {currentUser?.role !== 'Member' && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        field.onChange(field.value.filter(id => id !== userId));
+                                                                    }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </button>
+                                                            )}
                                                         </Badge>
                                                     );
                                                 })}
                                             </div>
                                             <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                                        </div>
+                                        </button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                          <Command>
@@ -287,7 +301,7 @@ export default function CreateTaskPage() {
                                                             key={user.id}
                                                             onSelect={() => {
                                                                 field.onChange([...field.value, user.id]);
-                                                                setOpenAssignee(false);
+                                                                // Do not close popover to allow multi-select
                                                             }}
                                                         >
                                                           {user.name} <span className="ml-2 text-muted-foreground">({user.role === 'Chair of Directors' ? 'Director' : user.role})</span>
@@ -404,7 +418,7 @@ export default function CreateTaskPage() {
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Minute" />
-                                                    </SelectTrigger> {/* <-- FIXED: was </Trigger> */}
+                                                    </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
                                                     {Array.from({length: 60}, (_, i) => i.toString().padStart(2,'0')).map(min => <SelectItem key={min} value={min}>{min}</SelectItem>)}

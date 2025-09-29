@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 export default async function TasksLayout({ children }: { children: ReactNode }) {
   const currentUser = await getCurrentUser();
 
-  const canCreateTask = currentUser?.role !== 'Member';
+  const canCreateTask = !!currentUser;
 
   return (
     <div className="flex flex-col gap-4">

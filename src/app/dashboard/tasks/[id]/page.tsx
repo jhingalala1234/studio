@@ -37,6 +37,7 @@ import TaskStatusUpdater from './task-status-updater';
 import AddLinkForm from './add-link-form';
 import AddCommentForm from './add-comment-form';
 import SubtasksManager from './subtasks-manager';
+import MarkAsDoneButton from '../mark-as-done-button';
 
 export default async function TaskDetailsPage({
   params,
@@ -98,7 +99,12 @@ export default async function TaskDetailsPage({
               </TooltipProvider>
             )}
           </div>
-          {isAssigner && <DeleteTaskButton taskId={task.id} />}
+           <div className="flex items-center gap-2">
+            {isAssignee && task.status !== 'Done' && task.status !== 'Cancelled' && (
+              <MarkAsDoneButton taskId={task.id} />
+            )}
+            {isAssigner && <DeleteTaskButton taskId={task.id} />}
+          </div>
         </div>
         <p className="text-muted-foreground">
           Created on {format(new Date(task.createdAt), 'PPP p')} by {assigner?.name || 'Unknown'}

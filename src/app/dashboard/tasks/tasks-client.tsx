@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Flame,
   Users,
+  CheckCircle2,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -32,6 +33,7 @@ import { differenceInHours, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Task, User } from '@/types';
 import { useMemo } from 'react';
+import MarkAsDoneButton from './mark-as-done-button';
 
 // Helper function to get all subordinates of a manager (recursively)
 const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
@@ -64,31 +66,33 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     const { role, id } = currentUser;
 
     if (role === 'Co-founder' || role === 'Secretary') {
-        return initialTasks;
+      return initialTasks;
     }
-    
+
     if (role === 'Member') {
-        return initialTasks.filter(task => (task.assignedToIds || []).includes(id));
+      return initialTasks.filter(task => (task.assignedToIds || []).includes(id));
     }
-    
+
     if (role === 'Chair of Directors') {
-        const subordinateIds = getSubordinates(id, users);
-        const teamMemberIds = new Set([id, ...subordinateIds]);
-        
-        return initialTasks.filter(task => 
-            (task.assignedToIds || []).some(assigneeId => teamMemberIds.has(assigneeId)) || task.assignedById === id
-        );
+      const subordinateIds = getSubordinates(id, users);
+      const teamMemberIds = new Set([id, ...subordinateIds]);
+
+      return initialTasks.filter(task =>
+        (task.assignedToIds || []).some(assigneeId => teamMemberIds.has(assigneeId)) ||
+        task.assignedById === id
+      );
+    }
+
+    if (role === 'Lead') {
+      const subordinateIds = getSubordinates(id, users);
+      const subTeamMemberIds = new Set([id, ...subordinateIds]);
+
+      return initialTasks.filter(task =>
+        (task.assignedToIds || []).some(assigneeId => subTeamMemberIds.has(assigneeId)) ||
+        task.assignedById === id
+      );
     }
     
-    if (role === 'Lead') {
-        const subordinateIds = getSubordinates(id, users);
-        const subTeamMemberIds = new Set([id, ...subordinateIds]);
-
-        return initialTasks.filter(task => 
-            (task.assignedToIds || []).some(assigneeId => subTeamMemberIds.has(assigneeId)) || task.assignedById === id
-        );
-    }
-
     return [];
   }, [currentUser, users, initialTasks]);
 
@@ -131,6 +135,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
             <TableHead>Assignees</TableHead>
             <TableHead>Assigner</TableHead>
             <TableHead className="hidden md:table-cell">Due Date</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -228,6 +233,11 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                   )}
                 </div>
               </TableCell>
+              <TableCell>
+                {(task.status === 'To Do' || task.status === 'In Progress') && task.assignees.some(a => a.id === currentUser.id) && (
+                  <MarkAsDoneButton taskId={task.id} variant="outline" />
+                )}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -250,19 +260,19 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
           </CardContent>
         </Card>
       </TabsContent>
-       <TabsContent value="active">
-        <Card className="glass">
-          <CardHeader>
-            <CardTitle>Active Tasks</CardTitle>
-            <CardDescription>
-              Tasks that are currently 'To Do' or 'In Progress'.
-            </CardDescription>
-          </Header>
-          <CardContent>
-            {renderTable(activeTasks)}
-          </CardContent>
-        </Card>
-      </TabsContent>
+        <TabsContent value="active">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle>Active Tasks</CardTitle>
+              <CardDescription>
+                Tasks that are currently 'To Do' or 'In Progress'.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderTable(activeTasks)}
+            </CardContent>
+          </Card>
+        </TabsContent>
       <TabsContent value="done">
         <Card className="glass">
           <CardHeader>

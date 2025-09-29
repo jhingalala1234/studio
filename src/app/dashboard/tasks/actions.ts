@@ -41,8 +41,8 @@ export async function addTask(data: FormData) {
     throw new Error("You must be logged in to add a task.");
   }
   
-  if(currentUser.role === 'Member') {
-    throw new Error("You do not have permission to create tasks.");
+  if(currentUser.role === 'Member' && (data.getAll('assignedToIds[]') as string[]).some(id => id !== currentUser.id)) {
+    throw new Error("You can only assign tasks to yourself.");
   }
 
   try {
@@ -83,26 +83,30 @@ export async function addTask(data: FormData) {
     // Create notifications for all assignees
     const notifMessage = `<strong>${currentUser.name}</strong> assigned a new task to you: <strong>${newTask.title}</strong>`;
     for (const assigneeId of assignedToIds) {
-        await createNotification(
-          assigneeId,
-          currentUser.id,
-          'TASK_ASSIGNED',
-          notifMessage,
-          `/dashboard/tasks/${docRef.id}`
-        );
+        if(assigneeId !== currentUser.id) {
+            await createNotification(
+            assigneeId,
+            currentUser.id,
+            'TASK_ASSIGNED',
+            notifMessage,
+            `/dashboard/tasks/${docRef.id}`
+            );
+        }
     }
     
     // Log message
-    const assigneesSnapshot = await adminDb.collection('users').where(FieldValue.documentId(), 'in', assignedToIds).get();
-    const assigneeNames = assigneesSnapshot.docs.map(doc => doc.data().name).join(', ');
+    if (assignedToIds.length > 0) {
+        const assigneesSnapshot = await adminDb.collection('users').where(FieldValue.documentId(), 'in', assignedToIds).get();
+        const assigneeNames = assigneesSnapshot.docs.map(doc => doc.data().name).join(', ');
 
-    const logMessage = `${currentUser.name} assigned "${newTask.title}" to ${assigneeNames}.`;
-    await adminDb.collection('logs').add({
-      message: logMessage,
-      timestamp: new Date().toISOString(),
-      userId: currentUser.id,
-      taskId: docRef.id,
-    });
+        const logMessage = `${currentUser.name} assigned "${newTask.title}" to ${assigneeNames}.`;
+        await adminDb.collection('logs').add({
+        message: logMessage,
+        timestamp: new Date().toISOString(),
+        userId: currentUser.id,
+        taskId: docRef.id,
+        });
+    }
 
 
   } catch (error) {
@@ -220,14 +224,16 @@ export async function updateTaskStatus(formData: FormData) {
             taskId: taskId,
         });
 
-        const notifMessage = `<strong>${currentUser.name}</strong> updated the status of <strong>${task.title}</strong> to <strong>${status}</strong>`;
-        await createNotification(
-            task.assignedById,
-            currentUser.id,
-            'STATUS_UPDATED',
-            notifMessage,
-            `/dashboard/tasks/${taskId}`
-        );
+        if (task.assignedById !== currentUser.id) {
+            const notifMessage = `<strong>${currentUser.name}</strong> updated the status of <strong>${task.title}</strong> to <strong>${status}</strong>`;
+            await createNotification(
+                task.assignedById,
+                currentUser.id,
+                'STATUS_UPDATED',
+                notifMessage,
+                `/dashboard/tasks/${taskId}`
+            );
+        }
 
         
     } catch (error) {
