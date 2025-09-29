@@ -50,8 +50,8 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
   const statusBadgeVariant = {
     'To Do': 'outline',
     'In Progress': 'secondary',
-    Done: 'default',
-    Cancelled': 'destructive',
+    'Done': 'default',
+    'Cancelled': 'destructive',
   } as const;
 
   return (
