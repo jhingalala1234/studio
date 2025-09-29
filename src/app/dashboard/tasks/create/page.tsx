@@ -155,12 +155,12 @@ export default function CreateTaskPage() {
 
       await addTask(formData);
 
-      toast({
-        title: "Success",
-        description: "Task created successfully.",
-      });
-      router.push('/dashboard/tasks');
     } catch (error) {
+        if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+            // This is expected, do nothing.
+            return;
+        }
+
         const errorMessage = error instanceof Error ? error.message : "Failed to create task. Please try again.";
         toast({
             variant: "destructive",
@@ -424,3 +424,5 @@ export default function CreateTaskPage() {
      </Card>
   );
 }
+
+    
