@@ -115,6 +115,7 @@ export async function addTask(data: FormData) {
   revalidatePath("/dashboard/tasks");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/my-week");
+  revalidatePath("/dashboard/tasks/board");
   redirect('/dashboard/tasks');
 }
 
@@ -167,6 +168,7 @@ export async function deleteTask(taskId: string) {
     revalidatePath("/dashboard/logs");
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/my-week");
+    revalidatePath("/dashboard/tasks/board");
     redirect('/dashboard/tasks');
 }
 
@@ -240,6 +242,7 @@ export async function updateTaskStatus(formData: FormData) {
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/logs");
     revalidatePath("/dashboard/my-week");
+    revalidatePath("/dashboard/tasks/board");
 }
 
 const addLinkSchema = z.object({
@@ -333,7 +336,8 @@ export async function addComment(formData: FormData) {
         taskId,
         userId: currentUser.id,
         message: comment,
-        createdAt: new Date().toISOString(),
+        createdAt: new
+ Date().toISOString(),
     };
 
     await adminDb.collection('comments').add(commentData);

@@ -6,6 +6,8 @@ import {
   AlertTriangle,
   Flame,
   PlusCircle,
+  LayoutGrid,
+  Rows,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -16,14 +18,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -73,7 +67,7 @@ const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
 export default function TasksClient({ currentUser, users, allTasks: initialTasks }: { currentUser: User, users: User[], allTasks: Task[] }) {
   
   const visibleTasks = useMemo(() => {
-    const { role, id } = currentUser;
+    const { role, id, team } = currentUser;
 
     if (role === 'Co-founder' || role === 'Secretary') {
       return initialTasks;
@@ -83,13 +77,16 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
       return initialTasks.filter(task => task.assignedToId === id);
     }
     
-    if (role === 'Chair of Directors' || role === 'Lead') {
+    if (role === 'Chair of Directors') {
+      const subordinateIds = getSubordinates(id, users);
+      const teamMemberIds = new Set([id, ...subordinateIds]);
+      return initialTasks.filter(task => teamMemberIds.has(task.assignedToId) || task.assignedById === id);
+    }
+    
+    if (role === 'Lead') {
         const subordinateIds = getSubordinates(id, users);
         const teamMemberIds = new Set([id, ...subordinateIds]);
-      
-        return initialTasks.filter(task => 
-            teamMemberIds.has(task.assignedToId) || task.assignedById === id
-        );
+        return initialTasks.filter(task => teamMemberIds.has(task.assignedToId) || task.assignedById === id);
     }
 
     return [];
@@ -114,7 +111,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     'To Do': 'outline',
     'In Progress': 'secondary',
     Done: 'default',
-    Cancelled: 'destructive',
+    Cancelled': 'destructive',
   } as const;
 
   const isDeadlineApproaching = (dueDate: string) => {
@@ -207,6 +204,22 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
           <TabsTrigger value="done">Done</TabsTrigger>
         </TabsList>
         <div className="ml-auto flex items-center gap-2">
+          <Button size="sm" variant="outline" className="h-8 gap-1" asChild>
+            <Link href="/dashboard/tasks">
+              <Rows className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                List
+              </span>
+            </Link>
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 gap-1" asChild>
+            <Link href="/dashboard/tasks/board">
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Board
+              </span>
+            </Link>
+          </Button>
           <Button size="sm" variant="outline" className="h-8 gap-1">
             <File className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
