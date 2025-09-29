@@ -7,6 +7,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { differenceInHours } from 'date-fns';
 import type { TaskStatus } from "@/types";
+import {FieldValue} from 'firebase-admin/firestore';
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -198,5 +199,65 @@ export async function updateTaskStatus(formData: FormData) {
     revalidatePath(`/dashboard/tasks/${taskId}`);
     revalidatePath("/dashboard/tasks");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/logs");
+}
+
+const addLinkSchema = z.object({
+    taskId: z.string(),
+    link: z.string().url("Please enter a valid URL."),
+});
+
+export async function addLink(formData: FormData) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+        throw new Error("You must be logged in.");
+    }
+
+    const validatedFields = addLinkSchema.safeParse({
+        taskId: formData.get('taskId'),
+        link: formData.get('link'),
+    });
+    
+    if (!validatedFields.success) {
+        const error = validatedFields.error.flatten().fieldErrors.link?.[0];
+        throw new Error(error || "Invalid data provided.");
+    }
+
+    const { taskId, link } = validatedFields.data;
+    
+    const taskRef = adminDb.collection("tasks").doc(taskId);
+    const taskDoc = await taskRef.get();
+
+    if (!taskDoc.exists) {
+        throw new Error("Task not found.");
+    }
+    const task = taskDoc.data();
+
+    // Ensure only assignee can add links
+    if (task?.assignedToId !== currentUser.id) {
+        throw new Error("You do not have permission to add links to this task.");
+    }
+
+    try {
+        await taskRef.update({
+            links: FieldValue.arrayUnion(link)
+        });
+
+        const logMessage = `${currentUser.name} added a link to "${task.title}".`;
+        await adminDb.collection('logs').add({
+            message: logMessage,
+            timestamp: new Date().toISOString(),
+            userId: currentUser.id,
+            taskId: taskId,
+        });
+
+    } catch (error) {
+        console.error("Failed to add link:", error);
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("An unknown error occurred while adding the link.");
+    }
+    revalidatePath(`/dashboard/tasks/${taskId}`);
     revalidatePath("/dashboard/logs");
 }

@@ -32,6 +32,7 @@ import {
 import Link from 'next/link';
 import DeleteTaskButton from '../delete-task-button';
 import TaskStatusUpdater from './task-status-updater';
+import AddLinkForm from './add-link-form';
 
 export default async function TaskDetailsPage({ params }: { params: { id: string } }) {
   const task = await getTaskById(params.id);
@@ -93,7 +94,7 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
           <Card>
             <CardHeader>
               <CardTitle>Reference Links</CardTitle>
-              <CardDescription>Links submitted for this task.</CardDescription>
+              <CardDescription>Links attached to this task.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                  <div className='flex items-start gap-4'>
@@ -104,6 +105,13 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
                         )) : <p className='text-sm text-muted-foreground'>No links attached.</p>}
                     </div>
                 </div>
+                 {isAssignee && (
+                  <div className="space-y-2 pt-4">
+                    <Separator />
+                    <p className="text-sm font-medium pt-4">Add a link</p>
+                    <AddLinkForm taskId={task.id} />
+                  </div>
+                )}
             </CardContent>
           </Card>
 
