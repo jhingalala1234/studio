@@ -258,12 +258,10 @@ export default function CreateTaskPage() {
                                 <FormLabel>Assign To</FormLabel>
                                 <Popover open={openAssignee} onOpenChange={setOpenAssignee}>
                                     <PopoverTrigger asChild>
-                                        <button
-                                            type="button"
+                                        <div
                                             role="combobox"
                                             aria-expanded={openAssignee}
-                                            className="flex min-h-10 w-full items-center gap-1 rounded-md border border-input p-2 text-left"
-                                            disabled={currentUser?.role === 'Member'}
+                                            className={cn("flex min-h-10 w-full items-center gap-1 rounded-md border border-input p-2 text-left", currentUser?.role === 'Member' && "cursor-not-allowed opacity-50")}
                                         >
                                             <div className="flex flex-wrap gap-1">
                                                 {field.value.length === 0 && <span className="text-muted-foreground">Select users...</span>}
@@ -279,6 +277,7 @@ export default function CreateTaskPage() {
                                                                         e.stopPropagation();
                                                                         field.onChange(field.value.filter(id => id !== userId));
                                                                     }}
+                                                                    className="rounded-full hover:bg-muted-foreground/20"
                                                                 >
                                                                     <X className="h-3 w-3" />
                                                                 </button>
@@ -288,7 +287,7 @@ export default function CreateTaskPage() {
                                                 })}
                                             </div>
                                             <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                                        </button>
+                                        </div>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                          <Command>
@@ -301,7 +300,6 @@ export default function CreateTaskPage() {
                                                             key={user.id}
                                                             onSelect={() => {
                                                                 field.onChange([...field.value, user.id]);
-                                                                // Do not close popover to allow multi-select
                                                             }}
                                                         >
                                                           {user.name} <span className="ml-2 text-muted-foreground">({user.role === 'Chair of Directors' ? 'Director' : user.role})</span>
