@@ -30,14 +30,11 @@ export interface User {
 
 export type TaskStatus = 'To Do' | 'In Progress' | 'Done' | 'Cancelled';
 
-export type TaskPriority = 'High' | 'Medium' | 'Low';
-
 export interface Task {
   id: string;
   title: string;
   description: string;
   status: TaskStatus;
-  priority: TaskPriority;
   urgent: boolean;
   assignedToId: string;
   assignedById: string;

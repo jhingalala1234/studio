@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -32,9 +32,9 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Trash } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, setHours, setMinutes } from "date-fns";
 import type { User, Team, UserRole } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { addTask } from "../actions";
@@ -43,14 +43,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { getAllUsers } from '@/lib/data';
 import { getCurrentUser } from '@/lib/auth';
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   assignedToId: z.string().min(1, "Please assign the task to a user"),
   dueDate: z.date({ required_error: "A due date is required." }),
+  dueDateTime: z.object({
+      hour: z.string(),
+      minute: z.string()
+  }),
+  files: z.any().optional(),
+  links: z.array(z.object({ value: z.string().url("Must be a valid URL").or(z.literal(''))})).optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -60,6 +64,7 @@ export default function CreateTaskPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Filters for Presidium
     const [selectedTeams, setSelectedTeams] = useState<Team[]>([]);
@@ -70,6 +75,18 @@ export default function CreateTaskPage() {
     const router = useRouter();
     const form = useForm<TaskFormValues>({
         resolver: zodResolver(taskSchema),
+        defaultValues: {
+            title: '',
+            description: '',
+            assignedToId: '',
+            dueDateTime: { hour: '23', minute: '59' },
+            links: [{value: ''}]
+        }
+    });
+    
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: "links"
     });
 
     useEffect(() => {
@@ -129,8 +146,30 @@ export default function CreateTaskPage() {
 
 
   const onSubmit = async (data: TaskFormValues) => {
+    setIsSubmitting(true);
     try {
-      await addTask(data);
+      const combinedDateTime = setMinutes(setHours(data.dueDate, parseInt(data.dueDateTime.hour, 10)), parseInt(data.dueDateTime.minute, 10));
+      
+      const formData = new FormData();
+      formData.append('title', data.title);
+      formData.append('description', data.description || '');
+      formData.append('assignedToId', data.assignedToId);
+      formData.append('dueDate', combinedDateTime.toISOString());
+      
+      if (data.links) {
+        data.links.forEach(link => {
+            if(link.value) formData.append('links[]', link.value);
+        });
+      }
+      
+      if (data.files && data.files.length > 0) {
+          for(let i = 0; i < data.files.length; i++) {
+              formData.append('files', data.files[i]);
+          }
+      }
+
+      await addTask(formData);
+
       toast({
         title: "Success",
         description: "Task created successfully.",
@@ -142,6 +181,8 @@ export default function CreateTaskPage() {
             title: "Error",
             description: errorMessage,
         });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -262,7 +303,7 @@ export default function CreateTaskPage() {
                             </div>
                          )}
                     </div>
-                     <div className="grid grid-cols-1 gap-6">
+                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <FormField
                         control={form.control}
                         name="dueDate"
@@ -275,7 +316,7 @@ export default function CreateTaskPage() {
                                     <Button
                                     variant={"outline"}
                                     className={cn(
-                                        "w-full pl-3 text-left font-normal",
+                                        "pl-3 text-left font-normal",
                                         !field.value && "text-muted-foreground"
                                     )}
                                     >
@@ -305,12 +346,108 @@ export default function CreateTaskPage() {
                             </FormItem>
                         )}
                         />
+                         <FormField
+                            control={form.control}
+                            name="dueDateTime"
+                            render={() => (
+                                <FormItem>
+                                <FormLabel>Due Time</FormLabel>
+                                <div className="flex gap-2">
+                                    <FormField
+                                        control={form.control}
+                                        name="dueDateTime.hour"
+                                        render={({ field }) => (
+                                        <FormItem className="flex-1">
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Hour" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {Array.from({length: 24}, (_, i) => i.toString().padStart(2,'0')).map(hour => <SelectItem key={hour} value={hour}>{hour}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormItem>
+                                    )}/>
+                                     <FormField
+                                        control={form.control}
+                                        name="dueDateTime.minute"
+                                        render={({ field }) => (
+                                        <FormItem className="flex-1">
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Minute" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {Array.from({length: 60}, (_, i) => i.toString().padStart(2,'0')).map(min => <SelectItem key={min} value={min}>{min}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormItem>
+                                    )}/>
+                                </div>
+                                 <FormMessage />
+                                </FormItem>
+                            )}
+                            />
                     </div>
+
+                    <FormField
+                        control={form.control}
+                        name="files"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>File Attachments</FormLabel>
+                                <FormControl>
+                                    <Input type="file" multiple onChange={(e) => field.onChange(e.target.files)} />
+                                </FormControl>
+                                <FormDescription>Upload any relevant documents for the task.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <div className="space-y-4">
+                        <FormLabel>Reference Links</FormLabel>
+                        {fields.map((field, index) => (
+                            <FormField
+                                key={field.id}
+                                control={form.control}
+                                name={`links.${index}.value`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <div className="flex items-center gap-2">
+                                            <FormControl>
+                                                <Input {...field} placeholder="https://example.com" />
+                                            </FormControl>
+                                            {index > 0 && (
+                                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                                    <Trash className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        ))}
+                         <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => append({ value: "" })}
+                            >
+                            Add Link
+                        </Button>
+                    </div>
+
                 </CardContent>
                 <CardFooter>
                     <Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button>
-                    <Button type="submit" disabled={form.formState.isSubmitting} className="ml-auto">
-                        {form.formState.isSubmitting ? 'Creating...' : 'Create Task'}
+                    <Button type="submit" disabled={isSubmitting} className="ml-auto">
+                        {isSubmitting ? 'Creating...' : 'Create Task'}
                     </Button>
                 </CardFooter>
             </form>
