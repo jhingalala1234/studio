@@ -24,7 +24,7 @@ export const getAllTasks = cache(async (): Promise<Task[]> => {
 });
 
 export const getTasksByAssigneeId = cache(async (assigneeId: string): Promise<Task[]> => {
-    const tasksSnapshot = await adminDb.collection('tasks').where('assignedToId', '==', assigneeId).orderBy('createdAt', 'desc').get();
+    const tasksSnapshot = await adminDb.collection('tasks').where('assignedToIds', 'array-contains', assigneeId).orderBy('createdAt', 'desc').get();
     return tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
 });
 

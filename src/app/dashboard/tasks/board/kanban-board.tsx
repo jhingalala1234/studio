@@ -12,6 +12,12 @@ import { KanbanColumn } from './kanban-column';
 import { updateTaskStatus } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 
+type AssigneeInfo = { name: string; avatar?: string };
+
+type EnrichedTask = Task & { 
+    assignees: AssigneeInfo[];
+};
+
 type ColumnData = {
   id: TaskStatus;
   title: string;
@@ -19,7 +25,7 @@ type ColumnData = {
 };
 
 type BoardState = {
-  tasks: Record<string, Task & { assigneeName: string; assigneeAvatar?: string; }>;
+  tasks: Record<string, EnrichedTask>;
   columns: Record<TaskStatus, ColumnData>;
   columnOrder: TaskStatus[];
 };
@@ -64,7 +70,7 @@ export default function KanbanBoard({
     }
     
     if (role === 'Member') {
-      return initialTasks.filter(task => task.assignedToId === id);
+      return initialTasks.filter(task => task.assignedToIds.includes(id));
     }
     
     if (role === 'Chair of Directors' || role === 'Lead') {
@@ -72,7 +78,7 @@ export default function KanbanBoard({
         const teamMemberIds = new Set([id, ...subordinateIds]);
       
         return initialTasks.filter(task => 
-            teamMemberIds.has(task.assignedToId) || task.assignedById === id
+            task.assignedToIds.some(assigneeId => teamMemberIds.has(assigneeId)) || task.assignedById === id
         );
     }
 
@@ -81,18 +87,20 @@ export default function KanbanBoard({
 
   const initialState: BoardState = useMemo(() => {
     const enrichedTasks = visibleTasks.map(task => {
-        const assignee = users.find(u => u.id === task.assignedToId);
+        const assignees = users
+            .filter(u => task.assignedToIds.includes(u.id))
+            .map(u => ({ name: u.name, avatar: u.avatar }));
+        
         return {
             ...task,
-            assigneeName: assignee?.name || 'Unassigned',
-            assigneeAvatar: assignee?.avatar,
+            assignees: assignees.length > 0 ? assignees : [{ name: 'Unassigned', avatar: '' }],
         }
     });
 
     const tasksById = enrichedTasks.reduce((acc, task) => {
         acc[task.id] = task;
         return acc;
-    }, {} as Record<string, Task & { assigneeName: string; assigneeAvatar?: string; }>);
+    }, {} as Record<string, EnrichedTask>);
 
     const columns: Record<TaskStatus, ColumnData> = {
       'To Do': { id: 'To Do', title: 'To Do', taskIds: [] },
@@ -137,7 +145,7 @@ export default function KanbanBoard({
     const endColumn = boardState.columns[destination.droppableId as TaskStatus];
     const task = boardState.tasks[draggableId];
 
-    if (currentUser.id !== task.assignedToId) {
+    if (!task.assignedToIds.includes(currentUser.id)) {
         toast({
             variant: "destructive",
             title: "Permission Denied",
@@ -181,12 +189,19 @@ export default function KanbanBoard({
       taskIds: endTaskIds,
     };
     
-    const newBoardState = {
+    const newBoardState: BoardState = {
         ...boardState,
         columns: {
             ...boardState.columns,
             [newStartColumn.id]: newStartColumn,
             [newEndColumn.id]: newEndColumn,
+        },
+        tasks: {
+            ...boardState.tasks,
+            [draggableId]: {
+                ...task,
+                status: destination.droppableId as TaskStatus,
+            }
         }
     }
     

@@ -10,8 +10,11 @@ import { format, differenceInHours } from 'date-fns';
 import Link from 'next/link';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
+type AssigneeInfo = { name: string; avatar?: string };
+type EnrichedTask = Task & { assignees: AssigneeInfo[] };
+
 interface KanbanCardProps {
-  task: Task & { assigneeName: string; assigneeAvatar?: string };
+  task: EnrichedTask;
   index: number;
 }
 
@@ -59,12 +62,32 @@ export function KanbanCard({ task, index }: KanbanCardProps) {
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-2">
-                             <Avatar className="h-6 w-6">
-                                <AvatarImage src={task.assigneeAvatar} />
-                                <AvatarFallback>{task.assigneeName.charAt(0)}</AvatarFallback>
-                             </Avatar>
-                             <span className="text-sm text-muted-foreground">{task.assigneeName}</span>
+                         <div className="flex items-center">
+                            {task.assignees.slice(0, 3).map((assignee, i) => (
+                                <Tooltip key={`${task.id}-assignee-${i}`}>
+                                    <TooltipTrigger>
+                                         <Avatar className="h-6 w-6 border-2 border-background -ml-2 first:ml-0">
+                                            <AvatarImage src={assignee.avatar} />
+                                            <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{assignee.name}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            ))}
+                             {task.assignees.length > 3 && (
+                                 <Tooltip>
+                                    <TooltipTrigger>
+                                         <Avatar className="h-6 w-6 border-2 border-background -ml-2 first:ml-0 flex items-center justify-center bg-muted">
+                                            <span className="text-xs">+{task.assignees.length - 3}</span>
+                                        </Avatar>
+                                    </TooltipTrigger>
+                                     <TooltipContent>
+                                        {task.assignees.slice(3).map((a, i) => <p key={`${task.id}-overflow-${i}`}>{a.name}</p>)}
+                                    </TooltipContent>
+                                </Tooltip>
+                             )}
                          </div>
                          <p className="text-xs text-muted-foreground">
                             Due: {format(new Date(task.dueDate), 'MMM d')}

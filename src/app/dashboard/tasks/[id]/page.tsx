@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   CalendarIcon,
-  User,
+  Users,
   ClipboardList,
   Flame,
   Link as LinkIcon,
@@ -56,10 +56,10 @@ export default async function TaskDetailsPage({
     getSubtasksForTask(task.id),
   ]);
 
-  const assignee = users.find(u => u.id === task.assignedToId);
+  const assignees = users.filter(u => task.assignedToIds.includes(u.id));
   const assigner = users.find(u => u.id === task.assignedById);
   const isAssigner = currentUser.id === task.assignedById;
-  const isAssignee = currentUser.id === task.assignedToId;
+  const isAssignee = task.assignedToIds.includes(currentUser.id);
 
   const statusBadgeVariant = {
     'To Do': 'outline',
@@ -216,16 +216,37 @@ export default async function TaskDetailsPage({
               <CardTitle>People</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <User className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+               <div className="flex items-start gap-3">
+                <Users className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">Assignee</span>
-                  {assignee ? (
+                  <span className="text-sm font-medium">Assignees</span>
+                   <div className="flex flex-col gap-1 mt-1">
+                    {assignees.length > 0 ? (
+                        assignees.map(assignee => (
+                             <Link
+                                key={assignee.id}
+                                href={`/dashboard/users/${assignee.id}`}
+                                className="text-sm text-primary hover:underline"
+                            >
+                                {assignee.name}
+                            </Link>
+                        ))
+                    ) : (
+                        <span className="text-sm">Unassigned</span>
+                    )}
+                   </div>
+                </div>
+              </div>
+               <div className="flex items-start gap-3">
+                <Users className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Assigner</span>
+                  {assigner ? (
                     <Link
-                      href={`/dashboard/users/${assignee.id}`}
+                      href={`/dashboard/users/${assigner.id}`}
                       className="text-sm text-primary hover:underline"
                     >
-                        {assignee.name}
+                        {assigner.name}
                     </Link>
                   ) : (
                     <span className="text-sm">Unassigned</span>

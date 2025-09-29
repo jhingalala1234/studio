@@ -6,6 +6,12 @@ import type { Task, TaskStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+type AssigneeInfo = { name: string; avatar?: string };
+
+type EnrichedTask = Task & { 
+    assignees: AssigneeInfo[];
+};
+
 type ColumnData = {
   id: TaskStatus;
   title: string;
@@ -14,7 +20,7 @@ type ColumnData = {
 
 interface KanbanColumnProps {
   column: ColumnData;
-  tasks: (Task & { assigneeName: string; assigneeAvatar?: string })[];
+  tasks: EnrichedTask[];
 }
 
 const statusColors: Record<TaskStatus, string> = {

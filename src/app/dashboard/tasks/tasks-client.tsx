@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   Flame,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -66,7 +67,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     }
     
     if (role === 'Member') {
-        return initialTasks.filter(task => task.assignedToId === id);
+        return initialTasks.filter(task => task.assignedToIds.includes(id));
     }
     
     if (role === 'Chair of Directors') {
@@ -74,7 +75,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
         const teamMemberIds = new Set([id, ...subordinateIds]);
         
         return initialTasks.filter(task => 
-            teamMemberIds.has(task.assignedToId) || task.assignedById === id
+            task.assignedToIds.some(assigneeId => teamMemberIds.has(assigneeId)) || task.assignedById === id
         );
     }
     
@@ -83,7 +84,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
         const subTeamMemberIds = new Set([id, ...subordinateIds]);
 
         return initialTasks.filter(task => 
-            subTeamMemberIds.has(task.assignedToId) || task.assignedById === id
+            task.assignedToIds.some(assigneeId => subTeamMemberIds.has(assigneeId)) || task.assignedById === id
         );
     }
 
@@ -91,13 +92,11 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
   }, [currentUser, users, initialTasks]);
 
   const enrichTask = (task: Task) => {
-    const assignee = users.find(u => u.id === task.assignedToId);
+    const assignees = users.filter(u => task.assignedToIds.includes(u.id));
     const assigner = users.find(u => u.id === task.assignedById);
     return {
       ...task,
-      assigneeName: assignee?.name || 'Unassigned',
-      assigneeAvatar: assignee?.avatar,
-      assigneeId: assignee?.id,
+      assignees: assignees.length > 0 ? assignees : [{ id: 'unassigned', name: 'Unassigned', avatar: '' }],
       assignerName: assigner?.name || 'System',
       assignerAvatar: assigner?.avatar,
       assignerId: assigner?.id,
@@ -128,7 +127,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
           <TableRow>
             <TableHead>Task</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Assignee</TableHead>
+            <TableHead>Assignees</TableHead>
             <TableHead>Assigner</TableHead>
             <TableHead className="hidden md:table-cell">Due Date</TableHead>
           </TableRow>
@@ -157,22 +156,43 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                 <Badge variant={statusBadgeVariant[task.status]}>{task.status}</Badge>
               </TableCell>
               <TableCell>
-                  {task.assigneeId ? (
-                    <Link href={`/dashboard/users/${task.assigneeId}`} className="flex items-center gap-2 group">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={task.assigneeAvatar} />
-                            <AvatarFallback>{task.assigneeName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="group-hover:underline">{task.assigneeName}</span>
-                    </Link>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                            <AvatarFallback>?</AvatarFallback>
-                        </Avatar>
-                        <span>{task.assigneeName}</span>
-                    </div>
-                  )}
+                 <div className="flex items-center">
+                    {task.assignees.slice(0, 2).map((assignee, index) => (
+                        <Tooltip key={assignee.id}>
+                            <TooltipTrigger asChild>
+                                <Link href={`/dashboard/users/${assignee.id}`} className="-ml-2 first:ml-0">
+                                    <Avatar className="h-7 w-7 border-2 border-background">
+                                        <AvatarImage src={assignee.avatar} />
+                                        <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{assignee.name}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    ))}
+                    {task.assignees.length > 2 && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="-ml-2">
+                                     <Avatar className="h-7 w-7 border-2 border-background bg-muted text-muted-foreground flex items-center justify-center">
+                                        <span className="text-xs">+{task.assignees.length - 2}</span>
+                                    </Avatar>
+                                </div>
+                            </TooltipTrigger>
+                             <TooltipContent>
+                                {task.assignees.slice(2).map(a => <p key={a.id}>{a.name}</p>)}
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                     {task.assignees[0].id === 'unassigned' && (
+                         <div className="flex items-center gap-2 text-muted-foreground">
+                             <Users className="h-4 w-4" />
+                            <span>Unassigned</span>
+                         </div>
+                     )}
+                </div>
               </TableCell>
               <TableCell>
                   {task.assignerId ? (

@@ -12,7 +12,7 @@ import {FieldValue} from 'firebase-admin/firestore';
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  assignedToId: z.string().min(1, "Please assign the task to a user"),
+  assignedToIds: z.array(z.string()).min(1, "Please assign the task to at least one user"),
   dueDate: z.date({ required_error: "A due date is required." }),
   links: z.array(z.string().url().or(z.literal(''))).optional(),
 });
@@ -49,7 +49,7 @@ export async function addTask(data: FormData) {
     const rawData = {
       title: data.get('title') || '',
       description: data.get('description') || '',
-      assignedToId: data.get('assignedToId') || '',
+      assignedToIds: data.getAll('assignedToIds[]') as string[],
       dueDate: new Date(data.get('dueDate') as string),
       links: data.getAll('links[]').map(l => l.toString()).filter(l => l),
     };
@@ -61,14 +61,14 @@ export async function addTask(data: FormData) {
       throw new Error("Invalid fields provided.");
     }
 
-    const { title, description, assignedToId, dueDate, links } = validatedFields.data;
+    const { title, description, assignedToIds, dueDate, links } = validatedFields.data;
     
     const isUrgent = differenceInHours(dueDate, new Date()) < 30;
 
     const newTask = {
       title,
       description: description || '',
-      assignedToId,
+      assignedToIds,
       dueDate: dueDate.toISOString(),
       status: "To Do",
       assignedById: currentUser.id,
@@ -80,28 +80,29 @@ export async function addTask(data: FormData) {
     const docRef = await adminDb.collection("tasks").add(newTask);
     console.log("Successfully created task with ID:", docRef.id);
     
-    const assigneeSnapshot = await adminDb.collection('users').doc(newTask.assignedToId).get();
-    if (!assigneeSnapshot.exists) {
-        throw new Error("Could not find the assigned user in the database.");
+    // Create notifications for all assignees
+    const notifMessage = `<strong>${currentUser.name}</strong> assigned a new task to you: <strong>${newTask.title}</strong>`;
+    for (const assigneeId of assignedToIds) {
+        await createNotification(
+          assigneeId,
+          currentUser.id,
+          'TASK_ASSIGNED',
+          notifMessage,
+          `/dashboard/tasks/${docRef.id}`
+        );
     }
-    const assignee = assigneeSnapshot.data();
+    
+    // Log message
+    const assigneesSnapshot = await adminDb.collection('users').where(FieldValue.documentId(), 'in', assignedToIds).get();
+    const assigneeNames = assigneesSnapshot.docs.map(doc => doc.data().name).join(', ');
 
-    const logMessage = `${currentUser.name} assigned "${newTask.title}" to ${assignee?.name}.`;
+    const logMessage = `${currentUser.name} assigned "${newTask.title}" to ${assigneeNames}.`;
     await adminDb.collection('logs').add({
       message: logMessage,
       timestamp: new Date().toISOString(),
       userId: currentUser.id,
       taskId: docRef.id,
     });
-    
-    const notifMessage = `<strong>${currentUser.name}</strong> assigned a new task to you: <strong>${newTask.title}</strong>`;
-    await createNotification(
-      newTask.assignedToId,
-      currentUser.id,
-      'TASK_ASSIGNED',
-      notifMessage,
-      `/dashboard/tasks/${docRef.id}`
-    );
 
 
   } catch (error) {
@@ -202,7 +203,7 @@ export async function updateTaskStatus(formData: FormData) {
     }
 
     const task = taskDoc.data();
-    if (task?.assignedToId !== currentUser.id) {
+    if (!task?.assignedToIds.includes(currentUser.id)) {
         throw new Error("You do not have permission to update this task's status.");
     }
     
@@ -276,7 +277,7 @@ export async function addLink(formData: FormData) {
     }
     const task = taskDoc.data();
 
-    if (task?.assignedToId !== currentUser.id) {
+    if (!task?.assignedToIds.includes(currentUser.id)) {
         throw new Error("You do not have permission to add links to this task.");
     }
 
@@ -350,16 +351,20 @@ export async function addComment(formData: FormData) {
         taskId: taskId,
     });
     
-    const recipientId = currentUser.id === task.assignedById ? task.assignedToId : task.assignedById;
-    const notifMessage = `<strong>${currentUser.name}</strong> left a comment on <strong>${task.title}</strong>`;
-    await createNotification(
-        recipientId,
-        currentUser.id,
-        'COMMENT_ADDED',
-        notifMessage,
-        `/dashboard/tasks/${taskId}`
-    );
+    // Notify assigner and other assignees
+    const recipientIds = new Set([task.assignedById, ...task.assignedToIds]);
+    recipientIds.delete(currentUser.id); // Don't notify the commenter
 
+    for (const recipientId of recipientIds) {
+        const notifMessage = `<strong>${currentUser.name}</strong> left a comment on <strong>${task.title}</strong>`;
+        await createNotification(
+            recipientId,
+            currentUser.id,
+            'COMMENT_ADDED',
+            notifMessage,
+            `/dashboard/tasks/${taskId}`
+        );
+    }
 
     revalidatePath(`/dashboard/tasks/${taskId}`);
     revalidatePath("/dashboard/logs");
@@ -371,7 +376,7 @@ export async function addSubtask(taskId: string, title: string): Promise<Subtask
 
     const taskRef = adminDb.collection("tasks").doc(taskId);
     const taskDoc = await taskRef.get();
-    if (!taskDoc.exists || taskDoc.data()?.assignedToId !== currentUser.id) {
+    if (!taskDoc.exists || !taskDoc.data()?.assignedToIds.includes(currentUser.id)) {
         throw new Error("You do not have permission to modify this task.");
     }
     
@@ -409,7 +414,7 @@ export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[])
     
     const taskRef = adminDb.collection("tasks").doc(taskId);
     const taskDoc = await taskRef.get();
-    if (!taskDoc.exists || taskDoc.data()?.assignedToId !== currentUser.id) {
+    if (!taskDoc.exists || !taskDoc.data()?.assignedToIds.includes(currentUser.id)) {
         throw new Error("You do not have permission to modify this task.");
     }
     

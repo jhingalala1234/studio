@@ -40,7 +40,7 @@ export interface Task {
   description: string;
   status: TaskStatus;
   urgent: boolean;
-  assignedToId: string;
+  assignedToIds: string[];
   assignedById: string;
   createdAt: string;
   dueDate: string;

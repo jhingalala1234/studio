@@ -23,13 +23,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Trash } from "lucide-react";
@@ -43,11 +36,19 @@ import { useState, useEffect, useMemo } from 'react';
 import { getAllUsers } from '@/lib/data';
 import { getCurrentUser } from '@/lib/auth';
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  assignedToId: z.string().min(1, "Please assign the task to a user"),
+  assignedToIds: z.array(z.string()).min(1, "Please assign the task to at least one user"),
   dueDate: z.date({ required_error: "A due date is required." }),
   dueDateTime: z.object({
       hour: z.string(),
@@ -74,7 +75,7 @@ export default function CreateTaskPage() {
         defaultValues: {
             title: '',
             description: '',
-            assignedToId: '',
+            assignedToIds: [],
             dueDateTime: { hour: '23', minute: '59' },
             links: [{value: ''}]
         }
@@ -105,23 +106,25 @@ export default function CreateTaskPage() {
         if (!currentUser) return [];
         const userRole = currentUser.role;
 
+        let availableUsers: User[] = [];
+
         if (userRole === 'Co-founder' || userRole === 'Secretary') {
-             if (selectedTeams.length === 0 && selectedRoles.length === 0) {
-                return allUsers.filter(u => u.team !== 'Presidium');
-             }
-            return allUsers.filter(user => {
+            availableUsers = allUsers.filter(u => u.team !== 'Presidium');
+        } else if (userRole === 'Chair of Directors') {
+            availableUsers = allUsers.filter(u => u.team === currentUser.team && (u.role === 'Lead' || u.role === 'Member'));
+        } else if (userRole === 'Lead') {
+            availableUsers = allUsers.filter(u => u.subTeam === currentUser.subTeam && u.role === 'Member');
+        }
+
+        if ((selectedTeams.length > 0 || selectedRoles.length > 0) && (userRole === 'Co-founder' || userRole === 'Secretary')) {
+             return availableUsers.filter(user => {
                 const teamMatch = selectedTeams.length === 0 || (user.team && selectedTeams.includes(user.team));
                 const roleMatch = selectedRoles.length === 0 || selectedRoles.includes(user.role);
-                return user.team !== 'Presidium' && teamMatch && roleMatch;
+                return teamMatch && roleMatch;
             });
         }
-        if (userRole === 'Chair of Directors') {
-            return allUsers.filter(u => u.team === currentUser.team && (u.role === 'Lead' || u.role === 'Member'));
-        }
-        if (userRole === 'Lead') {
-            return allUsers.filter(u => u.subTeam === currentUser.subTeam && u.role === 'Member');
-        }
-        return [];
+        
+        return availableUsers;
     }, [currentUser, allUsers, selectedTeams, selectedRoles]);
     
     const handleTeamFilterChange = (team: Team) => {
@@ -144,7 +147,7 @@ export default function CreateTaskPage() {
       const formData = new FormData();
       formData.append('title', data.title);
       formData.append('description', data.description || '');
-      formData.append('assignedToId', data.assignedToId);
+      data.assignedToIds.forEach(id => formData.append('assignedToIds[]', id));
       formData.append('dueDate', combinedDateTime.toISOString());
       
       if (data.links) {
@@ -241,24 +244,45 @@ export default function CreateTaskPage() {
                     <div className="space-y-4">
                         <FormField
                             control={form.control}
-                            name="assignedToId"
+                            name="assignedToIds"
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Assign To</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Select a team member" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {assignableUsers.map((user) => (
-                                    <SelectItem key={user.id} value={user.id}>
-                                        {user.name} ({user.role})
-                                    </SelectItem>
+                                 <ScrollArea className="h-48 rounded-md border p-4">
+                                     {assignableUsers.map((user) => (
+                                        <FormField
+                                            key={user.id}
+                                            control={form.control}
+                                            name="assignedToIds"
+                                            render={({ field }) => {
+                                                return (
+                                                <FormItem
+                                                    key={user.id}
+                                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                                >
+                                                    <FormControl>
+                                                    <Checkbox
+                                                        checked={field.value?.includes(user.id)}
+                                                        onCheckedChange={(checked) => {
+                                                        return checked
+                                                            ? field.onChange([...field.value, user.id])
+                                                            : field.onChange(
+                                                                field.value?.filter(
+                                                                (value) => value !== user.id
+                                                                )
+                                                            )
+                                                        }}
+                                                    />
+                                                    </FormControl>
+                                                    <FormLabel className="font-normal">
+                                                        {user.name} ({user.role})
+                                                    </FormLabel>
+                                                </FormItem>
+                                                )
+                                            }}
+                                        />
                                     ))}
-                                </SelectContent>
-                                </Select>
+                                 </ScrollArea>
                                 <FormMessage />
                             </FormItem>
                             )}
@@ -278,10 +302,10 @@ export default function CreateTaskPage() {
                                     </div>
                                      <div className="space-y-2">
                                         <p className="text-sm font-medium">By Role</p>
-                                        {(['Lead', 'Member'] as UserRole[]).map(role => (
+                                        {(['Chair of Directors', 'Lead', 'Member'] as UserRole[]).map(role => (
                                             <div key={role} className="flex items-center space-x-2">
                                                 <Checkbox id={`role-${role}`} checked={selectedRoles.includes(role)} onCheckedChange={() => handleRoleFilterChange(role)} />
-                                                <label htmlFor={`role-${role}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{role}</label>
+                                                <label htmlFor={`role-${role}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{role === 'Chair of Directors' ? 'Director' : role}</label>
                                             </div>
                                         ))}
                                     </div>
@@ -424,5 +448,3 @@ export default function CreateTaskPage() {
      </Card>
   );
 }
-
-    
