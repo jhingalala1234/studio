@@ -5,6 +5,7 @@ import type { User } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 export function UserCard({ user }: { user: User }) {
   const userInitials = user.name.split(' ').map(n => n[0]).join('');
@@ -20,6 +21,14 @@ export function UserCard({ user }: { user: User }) {
     return user.role;
   }
 
+  const teamColorClasses: Record<string, string> = {
+    Technology: 'bg-blue-900/50 text-blue-300 border-blue-700 hover:bg-blue-900/80',
+    Corporate: 'bg-green-900/50 text-green-300 border-green-700 hover:bg-green-900/80',
+    Creatives: 'bg-pink-900/50 text-pink-300 border-pink-700 hover:bg-pink-900/80',
+    Presidium: 'bg-primary/20 text-primary border-primary/50'
+  };
+
+
   return (
     <Link href={`/dashboard/users/${user.id}`} className="group">
         <Card className="glass h-full transition-all duration-300 ease-in-out group-hover:border-primary group-hover:shadow-lg group-hover:-translate-y-1">
@@ -31,7 +40,14 @@ export function UserCard({ user }: { user: User }) {
                 <div className="space-y-1">
                     <h3 className="font-semibold">{user.name}</h3>
                     <p className="text-sm text-muted-foreground">{getPosition(user)}</p>
-                    {user.team && <Badge variant="secondary" className="mt-2">{user.team}</Badge>}
+                    {user.team && (
+                        <Badge 
+                            variant="outline" 
+                            className={cn("mt-2", user.team && teamColorClasses[user.team])}
+                        >
+                            {user.team}
+                        </Badge>
+                    )}
                 </div>
             </CardContent>
         </Card>
