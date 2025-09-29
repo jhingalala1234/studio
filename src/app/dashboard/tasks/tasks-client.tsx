@@ -1,16 +1,10 @@
 'use client';
 
 import {
-  File,
-  ListFilter,
   AlertTriangle,
   Flame,
-  PlusCircle,
-  LayoutGrid,
-  Rows,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -29,8 +23,6 @@ import {
 import {
   Tabs,
   TabsContent,
-  TabsList,
-  TabsTrigger,
 } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -67,26 +59,23 @@ const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
 export default function TasksClient({ currentUser, users, allTasks: initialTasks }: { currentUser: User, users: User[], allTasks: Task[] }) {
   
   const visibleTasks = useMemo(() => {
-    const { role, id, team } = currentUser;
+    const { role, id } = currentUser;
 
     if (role === 'Co-founder' || role === 'Secretary') {
-      return initialTasks;
+        return initialTasks;
     }
-    
+
     if (role === 'Member') {
-      return initialTasks.filter(task => task.assignedToId === id);
+        return initialTasks.filter(task => task.assignedToId === id);
     }
     
-    if (role === 'Chair of Directors') {
-      const subordinateIds = getSubordinates(id, users);
-      const teamMemberIds = new Set([id, ...subordinateIds]);
-      return initialTasks.filter(task => teamMemberIds.has(task.assignedToId) || task.assignedById === id);
-    }
-    
-    if (role === 'Lead') {
+    if (role === 'Chair of Directors' || role === 'Lead') {
         const subordinateIds = getSubordinates(id, users);
         const teamMemberIds = new Set([id, ...subordinateIds]);
-        return initialTasks.filter(task => teamMemberIds.has(task.assignedToId) || task.assignedById === id);
+      
+        return initialTasks.filter(task => 
+            teamMemberIds.has(task.assignedToId) || task.assignedById === id
+        );
     }
 
     return [];
@@ -110,16 +99,14 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
   const statusBadgeVariant = {
     'To Do': 'outline',
     'In Progress': 'secondary',
-    Done: 'default',
-    Cancelled': 'destructive',
+    'Done': 'default',
+    'Cancelled': 'destructive',
   } as const;
 
   const isDeadlineApproaching = (dueDate: string) => {
     const hoursLeft = differenceInHours(new Date(dueDate), new Date());
     return hoursLeft >= 0 && hoursLeft < 24;
   }
-
-  const canCreateTask = currentUser?.role !== 'Member';
 
   const renderTable = (tasks: (Task & { assigneeName: string; assigneeAvatar: string | undefined; assigneeId: string | undefined; })[]) => (
      <TooltipProvider>
@@ -197,47 +184,6 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
 
   return (
     <Tabs defaultValue="all">
-      <div className="flex items-center">
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="done">Done</TabsTrigger>
-        </TabsList>
-        <div className="ml-auto flex items-center gap-2">
-          <Button size="sm" variant="outline" className="h-8 gap-1" asChild>
-            <Link href="/dashboard/tasks">
-              <Rows className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                List
-              </span>
-            </Link>
-          </Button>
-          <Button size="sm" variant="outline" className="h-8 gap-1" asChild>
-            <Link href="/dashboard/tasks/board">
-              <LayoutGrid className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Board
-              </span>
-            </Link>
-          </Button>
-          <Button size="sm" variant="outline" className="h-8 gap-1">
-            <File className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              Export
-            </span>
-          </Button>
-          {canCreateTask && (
-             <Button size="sm" className="h-8 gap-1" asChild>
-                <Link href="/dashboard/tasks/create">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        Add Task
-                    </span>
-                </Link>
-             </Button>
-          )}
-        </div>
-      </div>
       <TabsContent value="all">
         <Card className="glass">
           <CardHeader>

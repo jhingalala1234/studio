@@ -16,7 +16,7 @@ export default async function BoardPage() {
   if (!currentUser) return null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
       <Card className="glass">
         <CardHeader>
           <CardTitle>Task Board</CardTitle>
@@ -30,6 +30,6 @@ export default async function BoardPage() {
         users={users}
         currentUser={currentUser}
       />
-    </div>
+    </>
   );
 }
