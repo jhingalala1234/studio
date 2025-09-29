@@ -3,24 +3,75 @@
 import { cookies } from 'next/headers';
 import { adminDb } from './firebase-admin';
 import type { User } from '@/types';
+import {unstable_cache as cache} from 'next/cache';
+
+const SESSION_COOKIE_NAME = 'cxc_session';
 
 export async function getCurrentUser(): Promise<User | null> {
-    // For demo purposes, if no one is logged in, default to a user
-    // Defaulting to 'Tanishpoddar.18' as the logged-in user
-    const usersRef = adminDb.collection("users");
-    const q = usersRef.where("username", "==", "Tanishpoddar.18");
-    const querySnapshot = await q.get();
-
-    if (querySnapshot.empty) {
-        console.error("Default user 'Tanishpoddar.18' not found in Firestore. Please seed the database.");
+    const sessionCookie = cookies().get(SESSION_COOKIE_NAME)?.value;
+    if (!sessionCookie) {
         return null;
     }
 
-    const defaultUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
-    return defaultUser;
+    try {
+        const decodedToken = JSON.parse(sessionCookie);
+        const userId = decodedToken.userId;
+
+        if (!userId) {
+            return null;
+        }
+
+        const user = await cache(
+            async (id: string) => {
+                const userDoc = await adminDb.collection('users').doc(id).get();
+                if (!userDoc.exists) {
+                    return null;
+                }
+                return { id: userDoc.id, ...userDoc.data() } as User;
+            },
+            [`user-${userId}`], // Cache key
+            { revalidate: 3600 } // Revalidate every hour
+        )(userId);
+        
+        return user;
+    } catch (error) {
+        console.error('Error decoding session cookie:', error);
+        return null;
+    }
 }
 
+export async function login(email: string, password: string):Promise<void> {
+    const usersRef = adminDb.collection("users");
+    const q = usersRef.where("email", "==", email);
+    const querySnapshot = await q.get();
+
+    if (querySnapshot.empty) {
+        throw new Error("Invalid email or password.");
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const user = { id: userDoc.id, ...userDoc.data() } as User;
+
+    // In a real app, you MUST hash passwords.
+    // This is a major security vulnerability.
+    if (user.password !== password) {
+        throw new Error("Invalid email or password.");
+    }
+    
+    const sessionData = { 
+        userId: user.id,
+        loggedInAt: Date.now()
+    };
+    
+    cookies().set(SESSION_COOKIE_NAME, JSON.stringify(sessionData), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 7, // One week
+        path: '/',
+    });
+}
+
+
 export async function logout(): Promise<void> {
-  // This function is kept for potential future use but does nothing without a session cookie.
-  cookies().delete('cxc_session');
+  cookies().delete(SESSION_COOKIE_NAME);
 }
