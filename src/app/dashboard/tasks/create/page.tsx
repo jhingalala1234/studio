@@ -53,25 +53,22 @@ const taskSchema = z.object({
       hour: z.string(),
       minute: z.string()
   }),
-  links: z.array(z.object({ value: z.string().url("Must be a valid URL").or(z.literal('')) })).optional(),
+  links: z.array(z.object({ value: z.string().url("Must be a valid URL if not empty").or(z.literal('')) })).optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
-
 
 export default function CreateTaskPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Filters for Presidium
     const [selectedTeams, setSelectedTeams] = useState<Team[]>([]);
     const [selectedRoles, setSelectedRoles] = useState<UserRole[]>([]);
 
-
     const { toast } = useToast();
     const router = useRouter();
+    
     const form = useForm<TaskFormValues>({
         resolver: zodResolver(taskSchema),
         defaultValues: {
@@ -94,7 +91,6 @@ export default function CreateTaskPage() {
                 const [user, users] = await Promise.all([getCurrentUser(), getAllUsers()]);
                 setCurrentUser(user);
                 setAllUsers(users);
-
             } catch (error) {
                 console.error("Failed to fetch data", error);
                 toast({ variant: "destructive", title: "Error", description: "Failed to load necessary data." });
@@ -107,14 +103,12 @@ export default function CreateTaskPage() {
 
     const assignableUsers = useMemo(() => {
         if (!currentUser) return [];
-
         const userRole = currentUser.role;
 
         if (userRole === 'Co-founder' || userRole === 'Secretary') {
              if (selectedTeams.length === 0 && selectedRoles.length === 0) {
                 return allUsers.filter(u => u.team !== 'Presidium');
              }
-
             return allUsers.filter(user => {
                 const teamMatch = selectedTeams.length === 0 || (user.team && selectedTeams.includes(user.team));
                 const roleMatch = selectedRoles.length === 0 || selectedRoles.includes(user.role);
@@ -128,7 +122,6 @@ export default function CreateTaskPage() {
             return allUsers.filter(u => u.subTeam === currentUser.subTeam && u.role === 'Member');
         }
         return [];
-
     }, [currentUser, allUsers, selectedTeams, selectedRoles]);
     
     const handleTeamFilterChange = (team: Team) => {
@@ -142,7 +135,6 @@ export default function CreateTaskPage() {
             prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
         );
     }
-
 
   const onSubmit = async (data: TaskFormValues) => {
     setIsSubmitting(true);
@@ -387,7 +379,6 @@ export default function CreateTaskPage() {
                             )}
                             />
                     </div>
-
                     <div className="space-y-4">
                         <FormLabel>Reference Links</FormLabel>
                         {fields.map((field, index) => (
@@ -421,7 +412,6 @@ export default function CreateTaskPage() {
                             Add Link
                         </Button>
                     </div>
-
                 </CardContent>
                 <CardFooter>
                     <Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button>
