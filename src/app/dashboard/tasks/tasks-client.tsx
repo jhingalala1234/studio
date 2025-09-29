@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -67,7 +68,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     }
     
     if (role === 'Member') {
-        return initialTasks.filter(task => task.assignedToIds.includes(id));
+        return initialTasks.filter(task => (task.assignedToIds || []).includes(id));
     }
     
     if (role === 'Chair of Directors') {
@@ -75,7 +76,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
         const teamMemberIds = new Set([id, ...subordinateIds]);
         
         return initialTasks.filter(task => 
-            task.assignedToIds.some(assigneeId => teamMemberIds.has(assigneeId)) || task.assignedById === id
+            (task.assignedToIds || []).some(assigneeId => teamMemberIds.has(assigneeId)) || task.assignedById === id
         );
     }
     
@@ -84,7 +85,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
         const subTeamMemberIds = new Set([id, ...subordinateIds]);
 
         return initialTasks.filter(task => 
-            task.assignedToIds.some(assigneeId => subTeamMemberIds.has(assigneeId)) || task.assignedById === id
+            (task.assignedToIds || []).some(assigneeId => subTeamMemberIds.has(assigneeId)) || task.assignedById === id
         );
     }
 
@@ -92,11 +93,11 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
   }, [currentUser, users, initialTasks]);
 
   const enrichTask = (task: Task) => {
-    const assignees = users.filter(u => task.assignedToIds.includes(u.id));
+    const assignees = users.filter(u => (task.assignedToIds || []).includes(u.id));
     const assigner = users.find(u => u.id === task.assignedById);
     return {
       ...task,
-      assignees: assignees.length > 0 ? assignees : [{ id: 'unassigned', name: 'Unassigned', avatar: '' }],
+      assignees: assignees.length > 0 ? assignees : [{ id: 'unassigned', name: 'Unassigned', email: '', role: 'Member', team: null, subTeam: null, avatar: '' }],
       assignerName: assigner?.name || 'System',
       assignerAvatar: assigner?.avatar,
       assignerId: assigner?.id,
@@ -256,7 +257,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
             <CardDescription>
               Tasks that are currently 'To Do' or 'In Progress'.
             </CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent>
             {renderTable(activeTasks)}
           </CardContent>
