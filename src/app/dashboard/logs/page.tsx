@@ -14,25 +14,26 @@ import { getAllUsers, getAllTasks, getAllLogs } from '@/lib/data';
 
 // Helper function to get all subordinates of a manager (recursively)
 const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
-  const directSubordinates = allUsers.filter(user => {
-    // A Chair's subordinates are Leads in their team
-    const manager = allUsers.find(u => u.id === managerId);
-    if (manager?.role === 'Chair of Directors') {
-      return user.role === 'Lead' && user.team === manager.team;
-    }
-    // A Lead's subordinates are Members in their sub-team
-    if (manager?.role === 'Lead') {
-      return user.role === 'Member' && user.subTeam === manager.subTeam;
-    }
-    return false;
-  });
+  const manager = allUsers.find(u => u.id === managerId);
+  if (!manager) return [];
+
+  let directSubordinates: User[] = [];
+
+  // A Chair's subordinates are Leads and Members in their team
+  if (manager.role === 'Chair of Directors') {
+    directSubordinates = allUsers.filter(user => user.team === manager.team && (user.role === 'Lead' || user.role === 'Member'));
+  }
+  // A Lead's subordinates are Members in their sub-team
+  else if (manager.role === 'Lead') {
+    directSubordinates = allUsers.filter(user => user.subTeam === manager.subTeam && user.role === 'Member');
+  }
 
   const subordinateIds = directSubordinates.map(s => s.id);
+
+  // Recursively find subordinates of the direct subordinates (for Chairs overseeing Leads)
+  const nestedSubordinates = subordinateIds.flatMap(id => getSubordinates(id, allUsers));
   
-  return [
-    ...subordinateIds,
-    ...subordinateIds.flatMap(id => getSubordinates(id, allUsers))
-  ];
+  return [...subordinateIds, ...nestedSubordinates];
 };
 
 
@@ -47,37 +48,34 @@ export default async function LogsPage() {
   const getVisibleLogs = () => {
     const userRole = currentUser.role;
 
+    // Presidium can see all logs
     if (userRole === 'Co-founder' || userRole === 'Secretary') {
-      // Presidium can see all logs
       return allLogs;
     }
     
-    const tasksAssignedToMe = tasks.filter(t => t.assignedToId === currentUser.id).map(t => t.id);
-    const logsAboutMyTasks = allLogs.filter(log => log.taskId && tasksAssignedToMe.includes(log.taskId));
+    // Logs for actions taken by the current user
     const logsByMe = allLogs.filter(log => log.userId === currentUser.id);
 
-    if (userRole === 'Member') {
-      // Members see logs for tasks assigned to them, or actions they took.
-      const relevantLogs = [...logsAboutMyTasks, ...logsByMe];
-      return Array.from(new Set(relevantLogs.map(l => l.id))).map(id => relevantLogs.find(l => l.id === id)!);
-    }
+    // Get tasks where the user is either the assignee or the assigner
+    const myInvolvedTasks = tasks.filter(t => t.assignedToId === currentUser.id || t.assignedById === currentUser.id);
+    const myInvolvedTaskIds = myInvolvedTasks.map(t => t.id);
+
+    // Get logs related to those tasks
+    const logsAboutMyTasks = allLogs.filter(log => log.taskId && myInvolvedTaskIds.includes(log.taskId));
     
-    let subordinates: string[] = [];
+    let subordinateLogs: Log[] = [];
+
+    // If the user is a manager, get logs from their subordinates
     if (userRole === 'Chair of Directors' || userRole === 'Lead') {
-      subordinates = getSubordinates(currentUser.id, users);
-    }
-
-    // Chair of Directors also see logs from members in their team
-    if (userRole === 'Chair of Directors') {
-        const teamMembers = users.filter(u => u.team === currentUser.team && u.role === 'Member').map(u => u.id);
-        subordinates = [...subordinates, ...teamMembers];
+      const subordinateIds = getSubordinates(currentUser.id, users);
+      subordinateLogs = allLogs.filter(log => subordinateIds.includes(log.userId));
     }
     
-    const logsBySubordinates = allLogs.filter(log => subordinates.includes(log.userId));
-
     // Combine and deduplicate
-    const relevantLogs = [...logsAboutMyTasks, ...logsByMe, ...logsBySubordinates];
-    return Array.from(new Set(relevantLogs.map(l => l.id))).map(id => relevantLogs.find(l => l.id === id)!);
+    const relevantLogs = [...logsAboutMyTasks, ...logsByMe, ...subordinateLogs];
+    const uniqueLogIds = new Set(relevantLogs.map(l => l.id));
+    
+    return Array.from(uniqueLogIds).map(id => relevantLogs.find(l => l.id === id)!);
   };
 
   const filteredLogs = getVisibleLogs();
