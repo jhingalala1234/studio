@@ -233,7 +233,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
         </TableBody>
       </Table>
     </TooltipProvider>
-  )
+  );
 
   return (
     <Tabs defaultValue="all">
