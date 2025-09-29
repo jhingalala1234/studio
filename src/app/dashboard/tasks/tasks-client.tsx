@@ -64,34 +64,47 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     if (role === 'Co-founder' || role === 'Secretary') {
         return initialTasks;
     }
-
+    
     if (role === 'Member') {
         return initialTasks.filter(task => task.assignedToId === id);
     }
     
-    if (role === 'Chair of Directors' || role === 'Lead') {
+    if (role === 'Chair of Directors') {
         const subordinateIds = getSubordinates(id, users);
         const teamMemberIds = new Set([id, ...subordinateIds]);
-      
+        
         return initialTasks.filter(task => 
             teamMemberIds.has(task.assignedToId) || task.assignedById === id
+        );
+    }
+    
+    if (role === 'Lead') {
+        const subordinateIds = getSubordinates(id, users);
+        const subTeamMemberIds = new Set([id, ...subordinateIds]);
+
+        return initialTasks.filter(task => 
+            subTeamMemberIds.has(task.assignedToId) || task.assignedById === id
         );
     }
 
     return [];
   }, [currentUser, users, initialTasks]);
 
-  const getTaskWithAssignee = (task: Task) => {
+  const enrichTask = (task: Task) => {
     const assignee = users.find(u => u.id === task.assignedToId);
+    const assigner = users.find(u => u.id === task.assignedById);
     return {
       ...task,
       assigneeName: assignee?.name || 'Unassigned',
       assigneeAvatar: assignee?.avatar,
       assigneeId: assignee?.id,
+      assignerName: assigner?.name || 'System',
+      assignerAvatar: assigner?.avatar,
+      assignerId: assigner?.id,
     };
   };
 
-  const allTasks = visibleTasks.map(getTaskWithAssignee);
+  const allTasks = visibleTasks.map(enrichTask);
   const activeTasks = allTasks.filter(t => t.status === 'To Do' || t.status === 'In Progress');
   const doneTasks = allTasks.filter(t => t.status === 'Done' || t.status === 'Cancelled');
 
@@ -108,7 +121,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     return hoursLeft >= 0 && hoursLeft < 24;
   }
 
-  const renderTable = (tasks: (Task & { assigneeName: string; assigneeAvatar: string | undefined; assigneeId: string | undefined; })[]) => (
+  const renderTable = (tasks: (ReturnType<typeof enrichTask>)[]) => (
      <TooltipProvider>
       <Table>
         <TableHeader>
@@ -116,6 +129,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
             <TableHead>Task</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Assignee</TableHead>
+            <TableHead>Assigner</TableHead>
             <TableHead className="hidden md:table-cell">Due Date</TableHead>
           </TableRow>
         </TableHeader>
@@ -157,6 +171,24 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                             <AvatarFallback>?</AvatarFallback>
                         </Avatar>
                         <span>{task.assigneeName}</span>
+                    </div>
+                  )}
+              </TableCell>
+              <TableCell>
+                  {task.assignerId ? (
+                    <Link href={`/dashboard/users/${task.assignerId}`} className="flex items-center gap-2 group">
+                        <Avatar className="h-6 w-6">
+                            <AvatarImage src={task.assignerAvatar} />
+                            <AvatarFallback>{task.assignerName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="group-hover:underline">{task.assignerName}</span>
+                    </Link>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                            <AvatarFallback>?</AvatarFallback>
+                        </Avatar>
+                        <span>{task.assignerName}</span>
                     </div>
                   )}
               </TableCell>
