@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTaskById, getAllUsers } from '@/lib/data';
+import { getCurrentUser } from '@/lib/auth';
 import {
   Card,
   CardContent,
@@ -29,17 +30,20 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import Link from 'next/link';
+import DeleteTaskButton from '../delete-task-button';
 
 export default async function TaskDetailsPage({ params }: { params: { id: string } }) {
   const task = await getTaskById(params.id);
   const users = await getAllUsers();
+  const currentUser = await getCurrentUser();
 
-  if (!task) {
+  if (!task || !currentUser) {
     notFound();
   }
 
   const assignee = users.find((u) => u.id === task.assignedToId);
   const assigner = users.find((u) => u.id === task.assignedById);
+  const isAssigner = currentUser.id === task.assignedById;
 
   const statusBadgeVariant = {
     'To Do': 'outline',
@@ -51,20 +55,23 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <header className="space-y-2">
-        <div className="flex items-center gap-4">
-          <h1 className="font-headline text-3xl font-bold md:text-4xl">{task.title}</h1>
-          {task.urgent && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Flame className="h-6 w-6 text-destructive" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>This task is marked as urgent.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+        <div className="flex items-center gap-4 justify-between">
+            <div className="flex items-center gap-4">
+                <h1 className="font-headline text-3xl font-bold md:text-4xl">{task.title}</h1>
+                {task.urgent && (
+                    <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                        <Flame className="h-6 w-6 text-destructive" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                        <p>This task is marked as urgent.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    </TooltipProvider>
+                )}
+            </div>
+            {isAssigner && <DeleteTaskButton taskId={task.id} />}
         </div>
         <p className="text-muted-foreground">
           Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })} by {assigner?.name || 'Unknown'}

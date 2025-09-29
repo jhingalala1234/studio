@@ -87,3 +87,55 @@ export async function addTask(data: FormData) {
   revalidatePath("/dashboard");
   redirect('/dashboard/tasks');
 }
+
+
+export async function deleteTask(taskId: string) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+        throw new Error("You must be logged in to delete a task.");
+    }
+
+    const taskRef = adminDb.collection("tasks").doc(taskId);
+    const taskDoc = await taskRef.get();
+
+    if (!taskDoc.exists) {
+        throw new Error("Task not found.");
+    }
+
+    const task = taskDoc.data();
+
+    if (task?.assignedById !== currentUser.id) {
+        throw new Error("You do not have permission to delete this task.");
+    }
+
+    try {
+        // Delete the task
+        await taskRef.delete();
+        console.log(`Successfully deleted task with ID: ${taskId}`);
+
+        // Delete associated logs
+        const logsQuery = adminDb.collection("logs").where("taskId", "==", taskId);
+        const logsSnapshot = await logsQuery.get();
+        
+        if (!logsSnapshot.empty) {
+            const batch = adminDb.batch();
+            logsSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            console.log(`Deleted ${logsSnapshot.size} associated logs.`);
+        }
+
+    } catch (error) {
+        console.error("Failed to delete task:", error);
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("An unknown error occurred while deleting the task.");
+    }
+
+    revalidatePath("/dashboard/tasks");
+    revalidatePath("/dashboard/logs");
+    revalidatePath("/dashboard");
+    redirect('/dashboard/tasks');
+}

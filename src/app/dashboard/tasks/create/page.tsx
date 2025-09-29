@@ -348,7 +348,7 @@ export default function CreateTaskPage() {
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Hour" />
-                                                    </Trigger>
+                                                    </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
                                                     {Array.from({length: 24}, (_, i) => i.toString().padStart(2,'0')).map(hour => <SelectItem key={hour} value={hour}>{hour}</SelectItem>)}
@@ -365,7 +365,7 @@ export default function CreateTaskPage() {
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Minute" />
-                                                    </Trigger>
+                                                    </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
                                                     {Array.from({length: 60}, (_, i) => i.toString().padStart(2,'0')).map(min => <SelectItem key={min} value={min}>{min}</SelectItem>)}
