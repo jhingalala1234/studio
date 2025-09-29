@@ -53,7 +53,7 @@ export async function addTask(data: FormData) {
   if (files.length > 0) {
     const bucket = adminStorage.bucket(`gs://${process.env.FIREBASE_STORAGE_BUCKET}`);
     for (const file of files) {
-      if (file.size > 0) {
+      if (file && file.size > 0) { // Check if file is not null and has size > 0
         const fileBuffer = Buffer.from(await file.arrayBuffer());
         const filePath = `tasks/${Date.now()}-${file.name}`;
         const fileRef = bucket.file(filePath);
