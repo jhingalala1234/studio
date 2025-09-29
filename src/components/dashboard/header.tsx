@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, Search, Users } from 'lucide-react';
+import { Bell, Menu, Search, Users, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -21,10 +21,11 @@ import type { User } from '@/types';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/dashboard/tasks', label: 'Tasks' },
-  { href: '/dashboard/users', label: 'Users' },
-  { href: '/dashboard/logs', label: 'Logs' },
+  { href: '/dashboard', label: 'Dashboard', icon: null },
+  { href: '/dashboard/tasks', label: 'Tasks', icon: null },
+  { href: '/dashboard/users', label: 'Users', icon: null },
+  { href: '/dashboard/my-week', label: 'My Week', icon: CalendarCheck },
+  { href: '/dashboard/logs', label: 'Logs', icon: null },
 ];
 
 export function Header({ user }: { user: User }) {
@@ -34,10 +35,8 @@ export function Header({ user }: { user: User }) {
   return (
     <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black/50 backdrop-blur-lg">
       
-      {/* Top Row: Logo and Mobile Nav */}
       <div className="w-full border-b border-white/10 px-4 md:px-6">
         <div className="relative flex h-16 items-center justify-center">
-            {/* Mobile Nav Trigger (Left) */}
             <div className="md:hidden absolute left-0">
             <Sheet>
                 <SheetTrigger asChild>
@@ -60,7 +59,7 @@ export function Header({ user }: { user: User }) {
                         href={href}
                         className={cn(
                         'transition-colors hover:text-foreground',
-                        pathname.startsWith(href)
+                        pathname === href
                             ? 'text-foreground'
                             : 'text-muted-foreground'
                         )}
@@ -73,7 +72,6 @@ export function Header({ user }: { user: User }) {
             </Sheet>
             </div>
             
-            {/* Centered Logo */}
             <div className="absolute left-1/2 -translate-x-1/2">
                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
                     <Logo />
@@ -82,9 +80,7 @@ export function Header({ user }: { user: User }) {
         </div>
       </div>
       
-       {/* Second Row: Navigation Links */}
       <nav className="flex w-full items-center justify-center border-b border-white/10 px-4 py-2 md:px-6">
-          {/* Desktop Navigation Links (Centered) */}
           <div className="hidden items-center justify-center gap-6 md:flex">
             {navItems.map(({ href, label }) => (
               <Link
@@ -92,11 +88,11 @@ export function Header({ user }: { user: User }) {
                 href={href}
                 className={cn(
                   'relative rounded-md px-3 py-1 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/10 hover:text-white',
-                  pathname.startsWith(href) && 'text-white'
+                  pathname === href && 'text-white'
                 )}
               >
                 {label}
-                {pathname.startsWith(href) && (
+                {pathname === href && (
                   <span className="absolute inset-x-1 -bottom-2 h-0.5 rounded-full bg-primary transition-all"></span>
                 )}
               </Link>
@@ -104,10 +100,8 @@ export function Header({ user }: { user: User }) {
           </div>
       </nav>
 
-      {/* Bottom Row: Welcome & Actions */}
       <div className="w-full max-w-7xl px-4 py-3 md:px-6">
         <div className="flex items-center justify-between">
-          {/* Welcome Message (Left) */}
           <div className="flex flex-col">
               <h1 className="font-headline text-2xl font-bold md:text-3xl text-white">
                 Welcome back, {user?.name.split(' ')[0]}!
@@ -115,7 +109,6 @@ export function Header({ user }: { user: User }) {
               <p className="text-md text-muted-foreground">You are the {user?.role} at CloudX.</p>
           </div>
 
-          {/* Right-aligned Actions */}
           <div className="flex items-center justify-end gap-2">
             <form>
               <div className="relative">
@@ -128,9 +121,11 @@ export function Header({ user }: { user: User }) {
               </div>
             </form>
 
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Bell className="h-5 w-5" />
-              <span className="sr-only">Toggle notifications</span>
+            <Button variant="ghost" size="icon" className="rounded-full" asChild>
+              <Link href="/dashboard/notifications">
+                <Bell className="h-5 w-5" />
+                <span className="sr-only">Toggle notifications</span>
+              </Link>
             </Button>
 
             <DropdownMenu>

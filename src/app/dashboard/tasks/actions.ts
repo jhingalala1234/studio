@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { differenceInHours } from 'date-fns';
-import type { TaskStatus } from "@/types";
+import type { TaskStatus, Subtask, TimeLog } from "@/types";
 import {FieldValue} from 'firebase-admin/firestore';
 
 const taskSchema = z.object({
@@ -16,6 +16,24 @@ const taskSchema = z.object({
   dueDate: z.date({ required_error: "A due date is required." }),
   links: z.array(z.string().url().or(z.literal(''))).optional(),
 });
+
+async function createNotification(
+  userId: string,
+  actorId: string,
+  type: 'TASK_ASSIGNED' | 'STATUS_UPDATED' | 'COMMENT_ADDED' | 'DEADLINE_APPROACHING',
+  message: string,
+  link: string
+) {
+    await adminDb.collection('notifications').add({
+        userId,
+        actorId,
+        type,
+        message,
+        link,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+    });
+}
 
 export async function addTask(data: FormData) {
   const currentUser = await getCurrentUser();
@@ -75,6 +93,16 @@ export async function addTask(data: FormData) {
       userId: currentUser.id,
       taskId: docRef.id,
     });
+    
+    const notifMessage = `<strong>${currentUser.name}</strong> assigned a new task to you: <strong>${newTask.title}</strong>`;
+    await createNotification(
+      newTask.assignedToId,
+      currentUser.id,
+      'TASK_ASSIGNED',
+      notifMessage,
+      `/dashboard/tasks/${docRef.id}`
+    );
+
 
   } catch (error) {
     console.error("Failed to create task:", error);
@@ -86,6 +114,7 @@ export async function addTask(data: FormData) {
 
   revalidatePath("/dashboard/tasks");
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/my-week");
   redirect('/dashboard/tasks');
 }
 
@@ -110,21 +139,20 @@ export async function deleteTask(taskId: string) {
     }
 
     try {
-        // Delete the task
         await taskRef.delete();
         console.log(`Successfully deleted task with ID: ${taskId}`);
 
-        // Delete associated logs
-        const logsQuery = adminDb.collection("logs").where("taskId", "==", taskId);
-        const logsSnapshot = await logsQuery.get();
-        
-        if (!logsSnapshot.empty) {
-            const batch = adminDb.batch();
-            logsSnapshot.docs.forEach(doc => {
-                batch.delete(doc.ref);
-            });
-            await batch.commit();
-            console.log(`Deleted ${logsSnapshot.size} associated logs.`);
+        const collectionsToDelete = ['logs', 'comments', 'subtasks', 'timelogs', 'notifications'];
+        for (const collection of collectionsToDelete) {
+            const snapshot = await adminDb.collection(collection).where("taskId", "==", taskId).get();
+            if (!snapshot.empty) {
+                const batch = adminDb.batch();
+                snapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+                console.log(`Deleted ${snapshot.size} associated documents from ${collection}.`);
+            }
         }
 
     } catch (error) {
@@ -138,6 +166,7 @@ export async function deleteTask(taskId: string) {
     revalidatePath("/dashboard/tasks");
     revalidatePath("/dashboard/logs");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/my-week");
     redirect('/dashboard/tasks');
 }
 
@@ -187,6 +216,16 @@ export async function updateTaskStatus(formData: FormData) {
             userId: currentUser.id,
             taskId: taskId,
         });
+
+        const notifMessage = `<strong>${currentUser.name}</strong> updated the status of <strong>${task.title}</strong> to <strong>${status}</strong>`;
+        await createNotification(
+            task.assignedById,
+            currentUser.id,
+            'STATUS_UPDATED',
+            notifMessage,
+            `/dashboard/tasks/${taskId}`
+        );
+
         
     } catch (error) {
         console.error("Failed to update task status:", error);
@@ -200,6 +239,7 @@ export async function updateTaskStatus(formData: FormData) {
     revalidatePath("/dashboard/tasks");
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/logs");
+    revalidatePath("/dashboard/my-week");
 }
 
 const addLinkSchema = z.object({
@@ -233,7 +273,6 @@ export async function addLink(formData: FormData) {
     }
     const task = taskDoc.data();
 
-    // Ensure only assignee can add links
     if (task?.assignedToId !== currentUser.id) {
         throw new Error("You do not have permission to add links to this task.");
     }
@@ -260,4 +299,167 @@ export async function addLink(formData: FormData) {
     }
     revalidatePath(`/dashboard/tasks/${taskId}`);
     revalidatePath("/dashboard/logs");
+}
+
+const addCommentSchema = z.object({
+    taskId: z.string(),
+    comment: z.string().min(1, "Comment cannot be empty."),
+});
+
+export async function addComment(formData: FormData) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+        throw new Error("You must be logged in.");
+    }
+
+    const validatedFields = addCommentSchema.safeParse({
+        taskId: formData.get('taskId'),
+        comment: formData.get('comment'),
+    });
+
+    if (!validatedFields.success) {
+        throw new Error("Invalid comment data.");
+    }
+
+    const { taskId, comment } = validatedFields.data;
+    
+    const taskRef = adminDb.collection("tasks").doc(taskId);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists) throw new Error("Task not found.");
+    const task = taskDoc.data();
+    if (!task) throw new Error("Task data not found.");
+
+    const commentData = {
+        taskId,
+        userId: currentUser.id,
+        message: comment,
+        createdAt: new Date().toISOString(),
+    };
+
+    await adminDb.collection('comments').add(commentData);
+    
+    const logMessage = `${currentUser.name} commented on "${task.title}".`;
+    await adminDb.collection('logs').add({
+        message: logMessage,
+        timestamp: new Date().toISOString(),
+        userId: currentUser.id,
+        taskId: taskId,
+    });
+    
+    const recipientId = currentUser.id === task.assignedById ? task.assignedToId : task.assignedById;
+    const notifMessage = `<strong>${currentUser.name}</strong> left a comment on <strong>${task.title}</strong>`;
+    await createNotification(
+        recipientId,
+        currentUser.id,
+        'COMMENT_ADDED',
+        notifMessage,
+        `/dashboard/tasks/${taskId}`
+    );
+
+
+    revalidatePath(`/dashboard/tasks/${taskId}`);
+    revalidatePath("/dashboard/logs");
+}
+
+export async function addSubtask(taskId: string, title: string): Promise<Subtask | null> {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) throw new Error("You must be logged in.");
+
+    const taskRef = adminDb.collection("tasks").doc(taskId);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists || taskDoc.data()?.assignedToId !== currentUser.id) {
+        throw new Error("You do not have permission to modify this task.");
+    }
+    
+    const subtasksRef = adminDb.collection('subtasks');
+    const snapshot = await subtasksRef.where('taskId', '==', taskId).get();
+    const order = snapshot.size;
+
+    const newSubtask = {
+        taskId,
+        title,
+        isCompleted: false,
+        createdAt: new Date().toISOString(),
+        order,
+    };
+    const docRef = await subtasksRef.add(newSubtask);
+
+    revalidatePath(`/dashboard/tasks/${taskId}`);
+    return { id: docRef.id, ...newSubtask };
+}
+
+export async function toggleSubtask(subtaskId: string, isCompleted: boolean) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) throw new Error("You must be logged in.");
+
+    const subtaskRef = adminDb.collection('subtasks').doc(subtaskId);
+    // Add permission check if needed
+    await subtaskRef.update({ isCompleted });
+
+    revalidatePath(`/dashboard/tasks/${(await subtaskRef.get()).data()?.taskId}`);
+}
+
+export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[]) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) throw new Error("You must be logged in.");
+    
+    const taskRef = adminDb.collection("tasks").doc(taskId);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists || taskDoc.data()?.assignedToId !== currentUser.id) {
+        throw new Error("You do not have permission to modify this task.");
+    }
+    
+    const batch = adminDb.batch();
+    subtaskOrder.forEach((subtaskId, index) => {
+        const subtaskRef = adminDb.collection('subtasks').doc(subtaskId);
+        batch.update(subtaskRef, { order: index });
+    });
+
+    await batch.commit();
+    revalidatePath(`/dashboard/tasks/${taskId}`);
+}
+
+export async function startTimer(taskId: string): Promise<TimeLog | null> {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) throw new Error("You must be logged in.");
+
+    const taskDoc = await adminDb.collection('tasks').doc(taskId).get();
+    if (!taskDoc.exists || taskDoc.data()?.assignedToId !== currentUser.id) {
+        throw new Error("You do not have permission to track time for this task.");
+    }
+
+    // Ensure no other active timer for this user/task
+    const existingActive = await adminDb.collection('timelogs').where('taskId', '==', taskId).where('endTime', '==', null).get();
+    if (!existingActive.empty) {
+        throw new Error("An active timer is already running for this task.");
+    }
+    
+    const newLog = {
+        taskId,
+        userId: currentUser.id,
+        startTime: new Date().toISOString(),
+        endTime: null,
+    };
+
+    const docRef = await adminDb.collection('timelogs').add(newLog);
+    revalidatePath(`/dashboard/tasks/${taskId}`);
+    return { id: docRef.id, ...newLog };
+}
+
+
+export async function stopTimer(logId: string): Promise<TimeLog | null> {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) throw new Error("You must be logged in.");
+    
+    const logRef = adminDb.collection('timelogs').doc(logId);
+    const logDoc = await logRef.get();
+    if (!logDoc.exists || logDoc.data()?.userId !== currentUser.id) {
+         throw new Error("You do not have permission to stop this timer.");
+    }
+
+    await logRef.update({ endTime: new Date().toISOString() });
+    const updatedDoc = await logRef.get();
+
+    revalidatePath(`/dashboard/tasks/${logDoc.data()?.taskId}`);
+    return { id: updatedDoc.id, ...updatedDoc.data() } as TimeLog;
 }

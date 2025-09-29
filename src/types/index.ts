@@ -19,7 +19,7 @@ export interface User {
   id: string;
   name: string;
   username: string;
-  password?: string; // Should be handled securely, not stored plaintext
+  password?: string;
   email: string;
   avatar: string;
   role: UserRole;
@@ -49,4 +49,40 @@ export interface Log {
     timestamp: string;
     userId: string;
     taskId?: string;
+}
+
+export interface Comment {
+    id: string;
+    taskId: string;
+    userId: string;
+    message: string;
+    createdAt: string;
+}
+
+export interface Subtask {
+    id: string;
+    taskId: string;
+    title: string;
+    isCompleted: boolean;
+    createdAt: string;
+    order: number;
+}
+
+export interface TimeLog {
+    id: string;
+    taskId: string;
+    userId: string;
+    startTime: string;
+    endTime: string | null;
+}
+
+export interface Notification {
+    id: string;
+    userId: string; // The user who receives the notification
+    actorId: string; // The user who performed the action
+    type: 'TASK_ASSIGNED' | 'STATUS_UPDATED' | 'COMMENT_ADDED' | 'DEADLINE_APPROACHING';
+    message: string; // HTML-enabled message
+    link: string; // Link to the relevant page (e.g., task details)
+    isRead: boolean;
+    createdAt: string;
 }
