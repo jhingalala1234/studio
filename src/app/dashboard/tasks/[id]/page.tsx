@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/tooltip';
 import Link from 'next/link';
 import DeleteTaskButton from '../delete-task-button';
+import TaskStatusUpdater from './task-status-updater';
 
 export default async function TaskDetailsPage({ params }: { params: { id: string } }) {
   const task = await getTaskById(params.id);
@@ -44,12 +45,13 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
   const assignee = users.find((u) => u.id === task.assignedToId);
   const assigner = users.find((u) => u.id === task.assignedById);
   const isAssigner = currentUser.id === task.assignedById;
+  const isAssignee = currentUser.id === task.assignedToId;
 
   const statusBadgeVariant = {
     'To Do': 'outline',
     'In Progress': 'secondary',
     Done: 'default',
-    Cancelled: 'destructive',
+    Cancelled': 'destructive',
   } as const;
 
   return (
@@ -117,9 +119,17 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
                 <ClipboardList className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">Status</span>
-                  <Badge variant={statusBadgeVariant[task.status]} className="w-fit">{task.status}</Badge>
+                   <div className="flex items-center gap-2">
+                    <Badge variant={statusBadgeVariant[task.status]} className="w-fit">{task.status}</Badge>
+                   </div>
                 </div>
               </div>
+               {isAssignee && (
+                  <div className="space-y-2">
+                    <Separator />
+                    <TaskStatusUpdater task={task} />
+                  </div>
+                )}
               <div className="flex items-start gap-3">
                 <CalendarIcon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div className="flex flex-col">

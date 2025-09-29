@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { differenceInHours } from 'date-fns';
+import type { TaskStatus } from "@/types";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -76,10 +77,9 @@ export async function addTask(data: FormData) {
 
   } catch (error) {
     console.error("Failed to create task:", error);
-    if (error instanceof Error) {
-      throw new Error(error.message);
+    if (error instanceof Error && !error.message.includes('NEXT_REDIRECT')) {
+        throw new Error(error.message);
     }
-    throw new Error("An unknown error occurred while creating the task.");
   }
 
 
@@ -138,4 +138,65 @@ export async function deleteTask(taskId: string) {
     revalidatePath("/dashboard/logs");
     revalidatePath("/dashboard");
     redirect('/dashboard/tasks');
+}
+
+const updateStatusSchema = z.object({
+    taskId: z.string(),
+    status: z.enum(['To Do', 'In Progress', 'Done', 'Cancelled']),
+});
+
+export async function updateTaskStatus(formData: FormData) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+        throw new Error("You must be logged in.");
+    }
+
+    const validatedFields = updateStatusSchema.safeParse({
+        taskId: formData.get('taskId'),
+        status: formData.get('status'),
+    });
+    
+    if (!validatedFields.success) {
+        throw new Error("Invalid data provided.");
+    }
+
+    const { taskId, status } = validatedFields.data;
+    
+    const taskRef = adminDb.collection("tasks").doc(taskId);
+    const taskDoc = await taskRef.get();
+
+    if (!taskDoc.exists) {
+        throw new Error("Task not found.");
+    }
+
+    const task = taskDoc.data();
+    if (task?.assignedToId !== currentUser.id) {
+        throw new Error("You do not have permission to update this task's status.");
+    }
+    
+    const oldStatus = task.status;
+
+    try {
+        await taskRef.update({ status: status });
+
+        const logMessage = `${currentUser.name} updated the status of "${task.title}" from "${oldStatus}" to "${status}".`;
+        await adminDb.collection('logs').add({
+            message: logMessage,
+            timestamp: new Date().toISOString(),
+            userId: currentUser.id,
+            taskId: taskId,
+        });
+        
+    } catch (error) {
+        console.error("Failed to update task status:", error);
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("An unknown error occurred while updating the task status.");
+    }
+
+    revalidatePath(`/dashboard/tasks/${taskId}`);
+    revalidatePath("/dashboard/tasks");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/logs");
 }
