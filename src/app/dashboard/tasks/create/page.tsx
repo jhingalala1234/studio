@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Trash } from "lucide-react";
+import { CalendarIcon, ChevronsUpDown, Trash, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, setHours, setMinutes } from "date-fns";
 import type { User, Team, UserRole } from "@/types";
@@ -37,6 +37,7 @@ import { getAllUsers } from '@/lib/data';
 import { getCurrentUser } from '@/lib/auth';
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -242,26 +243,47 @@ export default function CreateTaskPage() {
                     )}
                     />
                     <div className="space-y-4">
-                        <FormField
+                       <FormField
                             control={form.control}
                             name="assignedToIds"
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Assign To</FormLabel>
-                                 <ScrollArea className="h-48 rounded-md border p-4">
-                                     {assignableUsers.map((user) => (
-                                        <FormField
-                                            key={user.id}
-                                            control={form.control}
-                                            name="assignedToIds"
-                                            render={({ field }) => {
-                                                return (
-                                                <FormItem
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className={cn(
+                                                "w-full justify-between",
+                                                !field.value.length && "text-muted-foreground"
+                                                )}
+                                            >
+                                                <div className="flex gap-1 flex-wrap">
+                                                    {field.value.length > 0 ? (
+                                                        field.value.length > 2 ? (
+                                                            <Badge variant="secondary">{`${field.value.length} users selected`}</Badge>
+                                                        ) : (
+                                                            allUsers
+                                                                .filter(u => field.value.includes(u.id))
+                                                                .map(u => <Badge key={u.id} variant="secondary">{u.name}</Badge>)
+                                                        )
+                                                    ) : "Select users..."}
+                                                </div>
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                         <ScrollArea className="h-72">
+                                            {assignableUsers.map((user) => (
+                                                <div
                                                     key={user.id}
-                                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                                    className="flex flex-row items-center space-x-3 space-y-0 px-4 py-2 hover:bg-muted/50"
                                                 >
-                                                    <FormControl>
                                                     <Checkbox
+                                                        id={user.id}
                                                         checked={field.value?.includes(user.id)}
                                                         onCheckedChange={(checked) => {
                                                         return checked
@@ -273,16 +295,14 @@ export default function CreateTaskPage() {
                                                             )
                                                         }}
                                                     />
-                                                    </FormControl>
-                                                    <FormLabel className="font-normal">
-                                                        {user.name} ({user.role})
-                                                    </FormLabel>
-                                                </FormItem>
-                                                )
-                                            }}
-                                        />
-                                    ))}
-                                 </ScrollArea>
+                                                    <label htmlFor={user.id} className="font-normal flex-1 cursor-pointer">
+                                                        {user.name} <span className="text-muted-foreground">({user.role})</span>
+                                                    </label>
+                                                </div>
+                                            ))}
+                                         </ScrollArea>
+                                    </PopoverContent>
+                                </Popover>
                                 <FormMessage />
                             </FormItem>
                             )}
