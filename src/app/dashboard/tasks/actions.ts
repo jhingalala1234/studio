@@ -3,11 +3,9 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from 'next/navigation';
-import { adminDb, adminStorage } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { differenceInHours } from 'date-fns';
-import { getDownloadURL } from 'firebase-admin/storage';
-
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -47,29 +45,6 @@ export async function addTask(data: FormData) {
     
     const isUrgent = differenceInHours(dueDate, new Date()) < 30;
 
-    // File uploads
-    const files = data.getAll('files') as File[];
-    const fileUploadPromises: Promise<string>[] = [];
-    const bucket = adminStorage.bucket(`gs://${process.env.FIREBASE_STORAGE_BUCKET}`);
-
-    for (const file of files) {
-      if (file && file.size > 0) {
-        const fileBuffer = Buffer.from(await file.arrayBuffer());
-        const filePath = `tasks/${Date.now()}-${file.name}`;
-        const fileRef = bucket.file(filePath);
-
-        const promise = fileRef.save(fileBuffer, {
-            metadata: { contentType: file.type }
-        }).then(async () => {
-            await fileRef.makePublic();
-            return getDownloadURL(fileRef);
-        });
-        fileUploadPromises.push(promise);
-      }
-    }
-    
-    const fileUrls = await Promise.all(fileUploadPromises);
-
     const newTask = {
       title,
       description: description || '',
@@ -78,7 +53,6 @@ export async function addTask(data: FormData) {
       status: "To Do",
       assignedById: currentUser.id,
       createdAt: new Date().toISOString(),
-      files: fileUrls,
       links: links || [],
       urgent: isUrgent,
     };

@@ -83,27 +83,13 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Attachments</CardTitle>
-              <CardDescription>Files and links submitted for this task.</CardDescription>
+              <CardTitle>Reference Links</CardTitle>
+              <CardDescription>Links submitted for this task.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className='flex items-start gap-4'>
-                    <Paperclip className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
-                    <div className="flex flex-col gap-2">
-                        <span className="text-sm font-medium">Files</span>
-                        {task.files && task.files.length > 0 ? task.files.map(file => {
-                            const fileName = decodeURIComponent(file.split('/').pop()?.split('?')[0] || '').split('%2F').pop();
-                            return (
-                                <Link key={file} href={file} target="_blank" className="text-sm text-primary hover:underline">{fileName}</Link>
-                            )
-                        }) : <p className='text-sm text-muted-foreground'>No files attached.</p>}
-                    </div>
-                </div>
-                <Separator />
                  <div className='flex items-start gap-4'>
                     <LinkIcon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                     <div className="flex flex-col gap-2">
-                        <span className="text-sm font-medium">Links</span>
                         {task.links && task.links.length > 0 ? task.links.map(link => (
                             <Link key={link} href={link} target="_blank" className="text-sm text-primary hover:underline">{link}</Link>
                         )) : <p className='text-sm text-muted-foreground'>No links attached.</p>}

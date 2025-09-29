@@ -53,8 +53,7 @@ const taskSchema = z.object({
       hour: z.string(),
       minute: z.string()
   }),
-  files: z.any().optional(),
-  links: z.array(z.object({ value: z.string().url("Must be a valid URL").or(z.literal(''))})).optional(),
+  links: z.array(z.object({ value: z.string().url("Must be a valid URL unless empty").or(z.literal(''))})).optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -161,12 +160,6 @@ export default function CreateTaskPage() {
             if(link.value) formData.append('links[]', link.value);
         });
       }
-      
-      if (data.files && data.files.length > 0) {
-          for(let i = 0; i < data.files.length; i++) {
-              formData.append('files', data.files[i]);
-          }
-      }
 
       await addTask(formData);
 
@@ -174,6 +167,7 @@ export default function CreateTaskPage() {
         title: "Success",
         description: "Task created successfully.",
       });
+      router.push('/dashboard/tasks');
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Failed to create task. Please try again.";
         toast({
@@ -362,7 +356,7 @@ export default function CreateTaskPage() {
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Hour" />
-                                                    </SelectTrigger>
+                                                    </Trigger>
                                                 </FormControl>
                                                 <SelectContent>
                                                     {Array.from({length: 24}, (_, i) => i.toString().padStart(2,'0')).map(hour => <SelectItem key={hour} value={hour}>{hour}</SelectItem>)}
@@ -379,7 +373,7 @@ export default function CreateTaskPage() {
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Minute" />
-                                                    </SelectTrigger>
+                                                    </Trigger>
                                                 </FormControl>
                                                 <SelectContent>
                                                     {Array.from({length: 60}, (_, i) => i.toString().padStart(2,'0')).map(min => <SelectItem key={min} value={min}>{min}</SelectItem>)}
@@ -393,21 +387,6 @@ export default function CreateTaskPage() {
                             )}
                             />
                     </div>
-
-                    <FormField
-                        control={form.control}
-                        name="files"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>File Attachments</FormLabel>
-                                <FormControl>
-                                    <Input type="file" multiple onChange={(e) => field.onChange(e.target.files)} />
-                                </FormControl>
-                                <FormDescription>Upload any relevant documents for the task.</FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
 
                     <div className="space-y-4">
                         <FormLabel>Reference Links</FormLabel>

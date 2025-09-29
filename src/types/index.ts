@@ -40,7 +40,6 @@ export interface Task {
   assignedById: string;
   createdAt: string;
   dueDate: string;
-  files: string[];
   links: string[];
 }
 
