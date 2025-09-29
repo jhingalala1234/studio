@@ -40,7 +40,10 @@ import type { User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { addTask } from "../actions";
 import { useRouter } from "next/navigation";
-import type { FC } from 'react';
+import { useState, useEffect } from 'react';
+import { getAllUsers } from '@/lib/data';
+import { getCurrentUser } from '@/lib/auth';
+
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -53,20 +56,59 @@ const taskSchema = z.object({
 
 type TaskFormValues = z.infer<typeof taskSchema>;
 
-interface CreateTaskPageProps {
-  assignableUsers: User[];
-}
 
-const CreateTaskForm: FC<CreateTaskPageProps> = ({ assignableUsers }) => {
-  const { toast } = useToast();
-  const router = useRouter();
-  const form = useForm<TaskFormValues>({
-    resolver: zodResolver(taskSchema),
-    defaultValues: {
-      priority: "Medium",
-      urgent: false,
-    },
-  });
+export default function CreateTaskPage() {
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const { toast } = useToast();
+    const router = useRouter();
+    const form = useForm<TaskFormValues>({
+        resolver: zodResolver(taskSchema),
+        defaultValues: {
+        priority: "Medium",
+        urgent: false,
+        },
+    });
+
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const [user, users] = await Promise.all([getCurrentUser(), getAllUsers()]);
+                setCurrentUser(user);
+                setAllUsers(users);
+
+                if (user) {
+                     const getAssignable = () => {
+                        switch (user.role) {
+                            case 'Co-founder':
+                            case 'Secretary':
+                                return users;
+                            
+                            case 'Chair of Directors':
+                                return users.filter(u => u.team === user.team && (u.role === 'Lead' || u.role === 'Member'));
+
+                            case 'Lead':
+                                return users.filter(u => u.subTeam === user.subTeam && u.role === 'Member');
+
+                            default:
+                                return [];
+                        }
+                    }
+                    setAssignableUsers(getAssignable());
+                }
+            } catch (error) {
+                console.error("Failed to fetch data", error);
+                toast({ variant: "destructive", title: "Error", description: "Failed to load necessary data." });
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchData();
+    }, [toast]);
+
 
   const onSubmit = async (data: TaskFormValues) => {
     try {
@@ -75,8 +117,6 @@ const CreateTaskForm: FC<CreateTaskPageProps> = ({ assignableUsers }) => {
         title: "Success",
         description: "Task created successfully.",
       });
-      // useRouter is used to navigate, which is a client-side hook.
-      // The actual redirection happens in the server action after successful submission.
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Failed to create task. Please try again.";
         toast({
@@ -86,6 +126,32 @@ const CreateTaskForm: FC<CreateTaskPageProps> = ({ assignableUsers }) => {
         });
     }
   };
+
+  if (loading) {
+      return (
+          <Card className="max-w-3xl mx-auto">
+              <CardHeader>
+                  <CardTitle>Loading...</CardTitle>
+                  <CardDescription>
+                      Fetching user data, please wait.
+                  </CardDescription>
+              </CardHeader>
+          </Card>
+      )
+  }
+
+  if (!currentUser || currentUser.role === 'Member') {
+        return (
+            <Card className="max-w-3xl mx-auto">
+                 <CardHeader>
+                    <CardTitle>Permission Denied</CardTitle>
+                    <CardDescription>
+                       You do not have the required permissions to create a new task.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+        )
+    }
 
   return (
      <Card className="max-w-3xl mx-auto">
@@ -251,48 +317,3 @@ const CreateTaskForm: FC<CreateTaskPageProps> = ({ assignableUsers }) => {
      </Card>
   );
 };
-
-// This is a server component to fetch data and then pass it to the client component.
-import { getAllUsers } from '@/lib/data';
-import { getCurrentUser } from '@/lib/auth';
-
-export default async function CreateTaskPage() {
-    const currentUser = await getCurrentUser();
-    const allUsers = await getAllUsers();
-
-    if (!currentUser || currentUser.role === 'Member') {
-        return (
-            <Card className="max-w-3xl mx-auto">
-                 <CardHeader>
-                    <CardTitle>Permission Denied</CardTitle>
-                    <CardDescription>
-                       You do not have the required permissions to create a new task.
-                    </CardDescription>
-                </CardHeader>
-            </Card>
-        )
-    }
-
-    const getAssignableUsers = () => {
-        switch (currentUser.role) {
-            case 'Co-founder':
-            case 'Secretary':
-                return allUsers; // Presidium can assign to anyone
-            
-            case 'Chair of Directors':
-                // Can assign to Leads and Members in their team
-                return allUsers.filter(user => user.team === currentUser.team && (user.role === 'Lead' || user.role === 'Member'));
-
-            case 'Lead':
-                // Can assign to Members in their sub-team
-                return allUsers.filter(user => user.subTeam === currentUser.subTeam && user.role === 'Member');
-
-            default:
-                return [];
-        }
-    }
-
-    const assignableUsers = getAssignableUsers();
-
-    return <CreateTaskForm assignableUsers={assignableUsers} />;
-}

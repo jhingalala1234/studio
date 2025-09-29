@@ -57,14 +57,8 @@ export default async function Dashboard() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 md:gap-8">
-      <div className="flex flex-col">
-        <h1 className="font-headline text-3xl font-bold md:text-4xl">
-          Welcome back, {user?.name.split(' ')[0]}!
-        </h1>
-        <p className="text-lg text-muted-foreground">You are the {user?.role} at CloudX.</p>
-      </div>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <Card>
+        <Card className="glass">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">My Tasks</CardTitle>
             <ListTodo className="h-4 w-4 text-muted-foreground" />
@@ -76,7 +70,7 @@ export default async function Dashboard() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Team Tasks</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -86,7 +80,7 @@ export default async function Dashboard() {
             <p className="text-xs text-muted-foreground">Across your teams and leads</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed Tasks</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
@@ -98,7 +92,7 @@ export default async function Dashboard() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Now</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
@@ -110,7 +104,7 @@ export default async function Dashboard() {
         </Card>
       </div>
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
+        <Card className="xl:col-span-2 glass">
           <CardHeader>
             <CardTitle>Task Overview</CardTitle>
             <CardDescription>A summary of all tasks by status.</CardDescription>
@@ -119,7 +113,7 @@ export default async function Dashboard() {
              <TaskChart data={chartData} />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
             <CardDescription>
