@@ -6,9 +6,6 @@ import {
   addDays,
   startOfWeek,
   isSameDay,
-  isAfter,
-  isBefore,
-  startOfDay,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Flame } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -49,7 +45,7 @@ export default function MyWeekClient({ tasks }: { tasks: Task[] }) {
     'To Do': 'outline',
     'In Progress': 'secondary',
     Done: 'default',
-    Cancelled': 'destructive',
+    Cancelled: 'destructive',
   } as const;
 
   return (
@@ -73,7 +69,7 @@ export default function MyWeekClient({ tasks }: { tasks: Task[] }) {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-7">
           {tasksByDay.map(({ day, tasks }) => (
             <div
-              key={day.toString()}
+              key={day.toISOString()}
               className={cn(
                 'rounded-lg border p-4',
                 isSameDay(day, new Date()) && 'bg-muted/50'
@@ -94,7 +90,7 @@ export default function MyWeekClient({ tasks }: { tasks: Task[] }) {
                     <div className="rounded-lg border bg-background p-2 text-sm transition-shadow hover:shadow-md">
                       <p className="flex items-center gap-2 font-medium">
                         {task.urgent && <Flame className="h-4 w-4 text-destructive" />}
-                         {task.title}
+                        {task.title}
                       </p>
                       <Badge variant={statusBadgeVariant[task.status]} className="mt-1">
                         {task.status}
@@ -103,7 +99,7 @@ export default function MyWeekClient({ tasks }: { tasks: Task[] }) {
                   </Link>
                 ))}
                 {tasks.length === 0 && (
-                   <div className="h-10"></div>
+                  <div className="h-10"></div>
                 )}
               </div>
             </div>

@@ -17,7 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/actions';
 import { Logo } from '@/components/logo';
-import type { User } from '@/types';
+import type { User, UserRole, Team } from '@/types';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -28,9 +28,17 @@ const navItems = [
   { href: '/dashboard/logs', label: 'Logs', icon: null },
 ];
 
+const getUserTitle = (role: UserRole, team: Team | null): string => {
+  if (role === 'Chair of Directors' && team) {
+    return `Director of ${team}`;
+  }
+  return role;
+}
+
 export function Header({ user }: { user: User }) {
   const userInitials = user.name.split(' ').map((n) => n[0]).join('');
   const pathname = usePathname();
+  const userTitle = getUserTitle(user.role, user.team);
 
   return (
     <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black/50 backdrop-blur-lg">
@@ -106,7 +114,7 @@ export function Header({ user }: { user: User }) {
               <h1 className="font-headline text-2xl font-bold md:text-3xl text-white">
                 Welcome back, {user?.name.split(' ')[0]}!
               </h1>
-              <p className="text-md text-muted-foreground">You are the {user?.role} at CloudX.</p>
+              <p className="text-md text-muted-foreground">You are the {userTitle} at CloudX.</p>
           </div>
 
           <div className="flex items-center justify-end gap-2">
