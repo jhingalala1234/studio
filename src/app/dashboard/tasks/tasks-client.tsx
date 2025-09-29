@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { differenceInHours } from 'date-fns';
+import { differenceInHours, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Task, User } from '@/types';
 import { useMemo } from 'react';
@@ -73,23 +73,23 @@ const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
 export default function TasksClient({ currentUser, users, allTasks: initialTasks }: { currentUser: User, users: User[], allTasks: Task[] }) {
   
   const visibleTasks = useMemo(() => {
-    const { role, id, team } = currentUser;
+    const { role, id } = currentUser;
 
     if (role === 'Co-founder' || role === 'Secretary') {
       return initialTasks;
     }
     
     if (role === 'Member') {
-      return initialTasks.filter(task => task.assignedToId === id || task.assignedById === id);
+      return initialTasks.filter(task => task.assignedToId === id);
     }
     
     if (role === 'Chair of Directors' || role === 'Lead') {
-      const subordinateIds = getSubordinates(id, users);
-      const teamMemberIds = new Set([id, ...subordinateIds]);
+        const subordinateIds = getSubordinates(id, users);
+        const teamMemberIds = new Set([id, ...subordinateIds]);
       
-      return initialTasks.filter(task => 
-        teamMemberIds.has(task.assignedToId) || task.assignedById === id
-      );
+        return initialTasks.filter(task => 
+            teamMemberIds.has(task.assignedToId) || task.assignedById === id
+        );
     }
 
     return [];
@@ -178,7 +178,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
               </TableCell>
               <TableCell className="hidden md:table-cell">
                 <div className="flex items-center gap-2">
-                  <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                  <span>{format(new Date(task.dueDate), "PPP")}</span>
                   {isDeadlineApproaching(task.dueDate) && task.status !== 'Done' && (
                       <Tooltip>
                       <TooltipTrigger>
