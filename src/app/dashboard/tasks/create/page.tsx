@@ -53,7 +53,7 @@ const taskSchema = z.object({
       hour: z.string(),
       minute: z.string()
   }),
-  links: z.array(z.object({ value: z.string().url("Must be a valid URL unless empty").or(z.literal(''))})).optional(),
+  links: z.array(z.object({ value: z.string().url("Must be a valid URL").or(z.literal('')) })).optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
