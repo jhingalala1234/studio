@@ -225,25 +225,12 @@ export default async function TaskDetailsPage({
                   {assignee ? (
                     <Link
                       href={`/dashboard/users/${assignee.id}`}
-                      className="group flex items-center gap-2"
+                      className="text-sm text-primary hover:underline"
                     >
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={assignee.avatar} />
-                        <AvatarFallback>
-                          {assignee.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm group-hover:underline">
                         {assignee.name}
-                      </span>
                     </Link>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback>?</AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">Unassigned</span>
-                    </div>
+                    <span className="text-sm">Unassigned</span>
                   )}
                 </div>
               </div>
