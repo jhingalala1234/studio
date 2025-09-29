@@ -26,6 +26,10 @@ export interface User {
   team: Team | null;
   secondaryTeam?: Team | null;
   subTeam: SubTeam | null;
+  birthday?: string;
+  phone?: string;
+  linkedin?: string;
+  github?: string;
 }
 
 export type TaskStatus = 'To Do' | 'In Progress' | 'Done' | 'Cancelled';

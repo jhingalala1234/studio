@@ -1,9 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getUserById, getTasksByAssigneeId, getAllUsers } from '@/lib/data';
+import { getUserById } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -12,28 +10,45 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Briefcase,
-  Calendar,
+  Cake,
+  Github,
+  Linkedin,
   Mail,
+  Phone,
+  User as UserIcon,
   Users,
-  Flame,
-  AlertTriangle,
 } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { differenceInHours } from 'date-fns';
+import { format } from 'date-fns';
+
+const getUserTitle = (role: string, team: string | null): string => {
+  if (role === 'Chair of Directors' && team) {
+    return `Director of ${team}`;
+  }
+  return role;
+};
+
+const InfoRow = ({ icon, label, value, isLink = false }: { icon: React.ReactNode, label: string, value: string | null | undefined, isLink?: boolean }) => {
+    if (!value) return null;
+    return (
+        <div className="flex items-start gap-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
+                {icon}
+            </div>
+            <div>
+                <p className="text-sm text-muted-foreground">{label}</p>
+                {isLink ? (
+                    <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">
+                        {value.replace(/^(https?:\/\/)?(www\.)?/, '')}
+                    </a>
+                ) : (
+                    <p className="text-sm font-medium">{value}</p>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 export default async function UserProfilePage({ params }: { params: { id: string } }) {
   const user = await getUserById(params.id);
@@ -42,24 +57,7 @@ export default async function UserProfilePage({ params }: { params: { id: string
     notFound();
   }
 
-  const assignedTasks = await getTasksByAssigneeId(user.id);
-  const allUsers = await getAllUsers();
-
-  const getAssignerName = (assignerId: string) => {
-    return allUsers.find(u => u.id === assignerId)?.name || 'Unknown';
-  };
-
-  const statusBadgeVariant = {
-    'To Do': 'outline',
-    'In Progress': 'secondary',
-    Done: 'default',
-    Cancelled: 'destructive',
-  } as const;
-
-   const isDeadlineApproaching = (dueDate: string) => {
-    const hoursLeft = differenceInHours(new Date(dueDate), new Date());
-    return hoursLeft >= 0 && hoursLeft < 24;
-  }
+  const position = getUserTitle(user.role, user.team);
 
   return (
     <div className="space-y-8">
@@ -72,25 +70,9 @@ export default async function UserProfilePage({ params }: { params: { id: string
                 {user.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-1">
               <h1 className="font-headline text-3xl font-bold">{user.name}</h1>
               <p className="text-muted-foreground">@{user.username}</p>
-              <div className="flex items-center justify-center gap-4 md:justify-start">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{user.role}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{user.team} {user.subTeam ? `(${user.subTeam})` : ''}</span>
-                </div>
-              </div>
-               <div className="flex items-center justify-center gap-2 md:justify-start">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <a href={`mailto:${user.email}`} className="text-sm text-primary hover:underline">
-                    {user.email}
-                  </a>
-                </div>
             </div>
           </div>
         </CardContent>
@@ -98,73 +80,21 @@ export default async function UserProfilePage({ params }: { params: { id: string
 
       <Card className="glass">
         <CardHeader>
-          <CardTitle>Assigned Tasks</CardTitle>
+          <CardTitle>User Information</CardTitle>
           <CardDescription>
-            A list of tasks currently assigned to {user.name.split(' ')[0]}.
+            Professional and contact details for {user.name.split(' ')[0]}.
           </CardDescription>
         </CardHeader>
         <CardContent>
-           <TooltipProvider>
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>Task</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Due Date</TableHead>
-                    <TableHead className="hidden lg:table-cell">Assigned By</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {assignedTasks.map(task => (
-                    <TableRow key={task.id}>
-                    <TableCell className="font-medium">
-                        <Link href={`/dashboard/tasks/${task.id}`} className="hover:underline">
-                         <div className="flex items-center gap-2">
-                            {task.title}
-                            {task.urgent && (
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Flame className="h-4 w-4 text-destructive" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>This task is marked as urgent.</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
-                        </Link>
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant={statusBadgeVariant[task.status]}>{task.status}</Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                        <div className="flex items-center gap-2">
-                          <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-                          {isDeadlineApproaching(task.dueDate) && task.status !== 'Done' && (
-                             <Tooltip>
-                              <TooltipTrigger>
-                                <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Deadline is approaching (less than 24 hours left).</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">{getAssignerName(task.assignedById)}</TableCell>
-                    </TableRow>
-                ))}
-                 {assignedTasks.length === 0 && (
-                    <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
-                            No tasks assigned to this user.
-                        </TableCell>
-                    </TableRow>
-                )}
-                </TableBody>
-            </Table>
-          </TooltipProvider>
+          <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+            <InfoRow icon={<Briefcase size={18} />} label="Position" value={position} />
+            <InfoRow icon={<Users size={18} />} label="Group Name" value={`${user.team} ${user.subTeam ? `(${user.subTeam})` : ''}`} />
+            <InfoRow icon={<Mail size={18} />} label="Email" value={user.email} isLink href={`mailto:${user.email}`} />
+            <InfoRow icon={<Phone size={18} />} label="Phone Number" value={user.phone} />
+            <InfoRow icon={<Cake size={18} />} label="Birthday" value={user.birthday ? format(new Date(user.birthday), 'MMMM do') : null} />
+            <InfoRow icon={<Linkedin size={18} />} label="LinkedIn" value={user.linkedin} isLink />
+            <InfoRow icon={<Github size={18} />} label="GitHub" value={user.github} isLink />
+          </div>
         </CardContent>
       </Card>
     </div>

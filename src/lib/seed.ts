@@ -28,6 +28,10 @@ const users = [
     role: 'Co-founder',
     team: 'Presidium',
     subTeam: null,
+    birthday: '1998-05-18',
+    phone: '+1-202-555-0178',
+    linkedin: 'https://linkedin.com/in/tanishpoddar',
+    github: 'https://github.com/tanishpoddar'
   },
   {
     id: 'user-2',
@@ -39,6 +43,10 @@ const users = [
     role: 'Co-founder',
     team: 'Presidium',
     subTeam: null,
+    birthday: '1999-02-11',
+    phone: '+1-202-555-0112',
+    linkedin: 'https://linkedin.com/in/sarthaklal',
+    github: 'https://github.com/sarthaklal'
   },
   {
     id: 'user-3',
@@ -50,6 +58,10 @@ const users = [
     role: 'Secretary',
     team: 'Presidium',
     subTeam: null,
+    birthday: '2000-09-01',
+    phone: '+1-202-555-0145',
+    linkedin: 'https://linkedin.com/in/asmisharma',
+    github: 'https://github.com/asmisharma'
   },
   {
     id: 'user-4',
@@ -61,6 +73,10 @@ const users = [
     role: 'Chair of Directors',
     team: 'Technology',
     subTeam: null,
+    birthday: '2001-11-23',
+    phone: '+1-202-555-0189',
+    linkedin: 'https://linkedin.com/in/sukhadkaur',
+    github: 'https://github.com/sukhadkaur'
   },
   {
     id: 'user-5',
@@ -72,6 +88,10 @@ const users = [
     role: 'Chair of Directors',
     team: 'Corporate',
     subTeam: null,
+    birthday: '2000-07-15',
+    phone: '+1-202-555-0199',
+    linkedin: 'https://linkedin.com/in/kavyasingh',
+    github: 'https://github.com/kavyasingh'
   },
   {
     id: 'user-6',
@@ -83,6 +103,10 @@ const users = [
     role: 'Chair of Directors',
     team: 'Creatives',
     subTeam: null,
+    birthday: '2002-01-30',
+    phone: '+1-202-555-0121',
+    linkedin: 'https://linkedin.com/in/sakshamgupta',
+    github: 'https://github.com/sakshamgupta'
   },
 ];
 
