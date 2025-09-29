@@ -23,10 +23,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/logo';
 import { login } from './actions';
-import { useTransition, useState } from 'react';
+import { useTransition, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
+import { getCurrentUser } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -39,6 +41,17 @@ export default function LoginPage() {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    async function checkUser() {
+      const user = await getCurrentUser();
+      if (user) {
+        router.push('/dashboard');
+      }
+    }
+    checkUser();
+  }, [router]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),

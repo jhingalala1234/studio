@@ -3,7 +3,6 @@
 import { cookies } from 'next/headers';
 import { adminDb } from './firebase-admin';
 import type { User } from '@/types';
-import {unstable_cache as cache} from 'next/cache';
 
 const SESSION_COOKIE_NAME = 'cxc_session';
 
@@ -14,28 +13,27 @@ export async function getCurrentUser(): Promise<User | null> {
     }
 
     try {
+        // Since we are not verifying the token against Firebase Auth service here,
+        // we are trusting the cookie content. This is acceptable for this internal demo app.
+        // In a production app, you'd want to use a library like `jose` to verify a JWT.
         const decodedToken = JSON.parse(sessionCookie);
         const userId = decodedToken.userId;
 
         if (!userId) {
             return null;
         }
-
-        const user = await cache(
-            async (id: string) => {
-                const userDoc = await adminDb.collection('users').doc(id).get();
-                if (!userDoc.exists) {
-                    return null;
-                }
-                return { id: userDoc.id, ...userDoc.data() } as User;
-            },
-            [`user-${userId}`], // Cache key
-            { revalidate: 3600 } // Revalidate every hour
-        )(userId);
+        
+        const userDoc = await adminDb.collection('users').doc(userId).get();
+        if (!userDoc.exists) {
+            return null;
+        }
+        const user = { id: userDoc.id, ...userDoc.data() } as User;
         
         return user;
     } catch (error) {
         console.error('Error decoding session cookie:', error);
+        // If the cookie is invalid, delete it.
+        cookies().delete(SESSION_COOKIE_NAME);
         return null;
     }
 }
