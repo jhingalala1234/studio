@@ -10,8 +10,21 @@ export const getAllUsers = cache(async (): Promise<User[]> => {
     return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
 });
 
+export const getUserById = cache(async (id: string): Promise<User | null> => {
+    const userDoc = await adminDb.collection('users').doc(id).get();
+    if (!userDoc.exists) {
+        return null;
+    }
+    return { id: userDoc.id, ...userDoc.data() } as User;
+});
+
 export const getAllTasks = cache(async (): Promise<Task[]> => {
     const tasksSnapshot = await adminDb.collection('tasks').orderBy('createdAt', 'desc').get();
+    return tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+});
+
+export const getTasksByAssigneeId = cache(async (assigneeId: string): Promise<Task[]> => {
+    const tasksSnapshot = await adminDb.collection('tasks').where('assignedToId', '==', assigneeId).orderBy('createdAt', 'desc').get();
     return tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
 });
 

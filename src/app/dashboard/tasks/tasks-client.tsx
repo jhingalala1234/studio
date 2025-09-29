@@ -51,6 +51,7 @@ export default function TasksClient({ currentUser, users, allTasks: tasks }: { c
       ...task,
       assigneeName: assignee?.name || 'Unassigned',
       assigneeAvatar: assignee?.avatar,
+      assigneeId: assignee?.id,
     };
   };
 
@@ -174,13 +175,22 @@ export default function TasksClient({ currentUser, users, allTasks: tasks }: { c
                         <Badge variant={priorityBadgeVariant[task.priority]}>{task.priority}</Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                              <AvatarImage src={task.assigneeAvatar} />
-                              <AvatarFallback>{task.assigneeName.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <span>{task.assigneeName}</span>
-                        </div>
+                         {task.assigneeId ? (
+                            <Link href={`/dashboard/users/${task.assigneeId}`} className="flex items-center gap-2 group">
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={task.assigneeAvatar} />
+                                    <AvatarFallback>{task.assigneeName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="group-hover:underline">{task.assigneeName}</span>
+                            </Link>
+                         ) : (
+                            <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                    <AvatarFallback>?</AvatarFallback>
+                                </Avatar>
+                                <span>{task.assigneeName}</span>
+                            </div>
+                         )}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-2">

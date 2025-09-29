@@ -155,13 +155,22 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
                 <User className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">Assignee</span>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={assignee?.avatar} />
-                      <AvatarFallback>{assignee?.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm">{assignee?.name || 'Unassigned'}</span>
-                  </div>
+                  {assignee ? (
+                    <Link href={`/dashboard/users/${assignee.id}`} className="flex items-center gap-2 group">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={assignee.avatar} />
+                        <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm group-hover:underline">{assignee.name}</span>
+                    </Link>
+                  ) : (
+                     <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                           <AvatarFallback>?</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">Unassigned</span>
+                     </div>
+                  )}
                 </div>
               </div>
             </CardContent>

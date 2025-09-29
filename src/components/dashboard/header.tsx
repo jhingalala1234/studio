@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, Search } from 'lucide-react';
+import { Bell, Menu, Search, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/dashboard/tasks', label: 'Tasks' },
+  { href: '/dashboard/users', label: 'Users' },
   { href: '/dashboard/logs', label: 'Logs' },
 ];
 
@@ -33,7 +34,7 @@ export function Header({ user }: { user: User }) {
   return (
     <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black/50 backdrop-blur-lg">
       
-       {/* Top Row: Logo and Navigation */}
+      {/* Top Row: Logo and Mobile Nav */}
       <div className="w-full border-b border-white/10 px-4 md:px-6">
         <div className="relative flex h-16 items-center justify-center">
             {/* Mobile Nav Trigger (Left) */}
@@ -59,7 +60,7 @@ export function Header({ user }: { user: User }) {
                         href={href}
                         className={cn(
                         'transition-colors hover:text-foreground',
-                        pathname === href
+                        pathname.startsWith(href)
                             ? 'text-foreground'
                             : 'text-muted-foreground'
                         )}
@@ -91,11 +92,11 @@ export function Header({ user }: { user: User }) {
                 href={href}
                 className={cn(
                   'relative rounded-md px-3 py-1 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/10 hover:text-white',
-                  pathname === href && 'text-white'
+                  pathname.startsWith(href) && 'text-white'
                 )}
               >
                 {label}
-                {pathname === href && (
+                {pathname.startsWith(href) && (
                   <span className="absolute inset-x-1 -bottom-2 h-0.5 rounded-full bg-primary transition-all"></span>
                 )}
               </Link>
