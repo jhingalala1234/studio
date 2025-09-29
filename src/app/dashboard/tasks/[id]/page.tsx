@@ -101,9 +101,7 @@ export default async function TaskDetailsPage({
           {isAssigner && <DeleteTaskButton taskId={task.id} />}
         </div>
         <p className="text-muted-foreground">
-          Created{' '}
-          {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}{' '}
-          by {assigner?.name || 'Unknown'}
+          Created on {format(new Date(task.createdAt), 'PPP p')} by {assigner?.name || 'Unknown'}
         </p>
       </header>
 

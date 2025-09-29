@@ -78,9 +78,6 @@ export default function TasksClient({ currentUser, users, allTasks: tasks }: { c
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="done">Done</TabsTrigger>
-          <TabsTrigger value="archived" className="hidden sm:flex">
-            Archived
-          </TabsTrigger>
         </TabsList>
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
@@ -99,9 +96,6 @@ export default function TasksClient({ currentUser, users, allTasks: tasks }: { c
                 Active
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem>Done</DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem>
-                Archived
-              </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" variant="outline" className="h-8 gap-1">
