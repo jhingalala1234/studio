@@ -339,7 +339,7 @@ export default function CreateTaskPage() {
                                 <PopoverTrigger asChild>
                                 <FormControl>
                                     <Button
-                                    variant={"outline"}
+                                    variant="outline"
                                     className={cn(
                                         "pl-3 text-left font-normal",
                                         !field.value && "text-muted-foreground"
@@ -404,7 +404,7 @@ export default function CreateTaskPage() {
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Minute" />
-                                                    </Trigger>
+                                                    </SelectTrigger> {/* <-- FIXED: was </Trigger> */}
                                                 </FormControl>
                                                 <SelectContent>
                                                     {Array.from({length: 60}, (_, i) => i.toString().padStart(2,'0')).map(min => <SelectItem key={min} value={min}>{min}</SelectItem>)}
