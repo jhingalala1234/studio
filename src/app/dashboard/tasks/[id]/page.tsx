@@ -41,12 +41,6 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
   const assignee = users.find((u) => u.id === task.assignedToId);
   const assigner = users.find((u) => u.id === task.assignedById);
 
-  const priorityBadgeVariant = {
-    High: 'destructive',
-    Medium: 'secondary',
-    Low: 'outline',
-  } as const;
-
   const statusBadgeVariant = {
     'To Do': 'outline',
     'In Progress': 'secondary',
@@ -128,13 +122,6 @@ export default async function TaskDetailsPage({ params }: { params: { id: string
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">Status</span>
                   <Badge variant={statusBadgeVariant[task.status]} className="w-fit">{task.status}</Badge>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Priority</span>
-                  <Badge variant={priorityBadgeVariant[task.priority]} className="w-fit">{task.priority}</Badge>
                 </div>
               </div>
               <div className="flex items-start gap-3">

@@ -49,12 +49,6 @@ export default async function UserProfilePage({ params }: { params: { id: string
     return allUsers.find(u => u.id === assignerId)?.name || 'Unknown';
   };
 
-  const priorityBadgeVariant = {
-    'High': 'destructive',
-    'Medium': 'secondary',
-    'Low': 'outline',
-  } as const;
-
   const statusBadgeVariant = {
     'To Do': 'outline',
     'In Progress': 'secondary',
@@ -116,7 +110,6 @@ export default async function UserProfilePage({ params }: { params: { id: string
                 <TableRow>
                     <TableHead>Task</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
                     <TableHead className="hidden md:table-cell">Due Date</TableHead>
                     <TableHead className="hidden lg:table-cell">Assigned By</TableHead>
                 </TableRow>
@@ -144,9 +137,6 @@ export default async function UserProfilePage({ params }: { params: { id: string
                     <TableCell>
                         <Badge variant={statusBadgeVariant[task.status]}>{task.status}</Badge>
                     </TableCell>
-                    <TableCell>
-                        <Badge variant={priorityBadgeVariant[task.priority]}>{task.priority}</Badge>
-                    </TableCell>
                     <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-2">
                           <span>{new Date(task.dueDate).toLocaleDateString()}</span>
@@ -167,7 +157,7 @@ export default async function UserProfilePage({ params }: { params: { id: string
                 ))}
                  {assignedTasks.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
+                        <TableCell colSpan={4} className="h-24 text-center">
                             No tasks assigned to this user.
                         </TableCell>
                     </TableRow>

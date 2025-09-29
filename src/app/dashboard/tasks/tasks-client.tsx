@@ -57,12 +57,6 @@ export default function TasksClient({ currentUser, users, allTasks: tasks }: { c
 
   const allTasks = tasks.map(getTaskWithAssignee);
 
-  const priorityBadgeVariant = {
-    'High': 'destructive',
-    'Medium': 'secondary',
-    'Low': 'outline',
-  } as const;
-
   const statusBadgeVariant = {
     'To Do': 'outline',
     'In Progress': 'secondary',
@@ -143,7 +137,6 @@ export default function TasksClient({ currentUser, users, allTasks: tasks }: { c
                   <TableRow>
                     <TableHead>Task</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
                     <TableHead>Assignee</TableHead>
                     <TableHead className="hidden md:table-cell">Due Date</TableHead>
                   </TableRow>
@@ -170,9 +163,6 @@ export default function TasksClient({ currentUser, users, allTasks: tasks }: { c
                       </TableCell>
                       <TableCell>
                         <Badge variant={statusBadgeVariant[task.status]}>{task.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={priorityBadgeVariant[task.priority]}>{task.priority}</Badge>
                       </TableCell>
                       <TableCell>
                          {task.assigneeId ? (

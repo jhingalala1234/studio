@@ -31,27 +31,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from '@/components/ui/switch';
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import type { User } from "@/types";
+import type { User, Team, UserRole } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { addTask } from "../actions";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getAllUsers } from '@/lib/data';
 import { getCurrentUser } from '@/lib/auth';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   assignedToId: z.string().min(1, "Please assign the task to a user"),
-  priority: z.enum(["Low", "Medium", "High"]),
   dueDate: z.date({ required_error: "A due date is required." }),
-  urgent: z.boolean().default(false),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -60,17 +59,17 @@ type TaskFormValues = z.infer<typeof taskSchema>;
 export default function CreateTaskPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [allUsers, setAllUsers] = useState<User[]>([]);
-    const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Filters for Presidium
+    const [selectedTeams, setSelectedTeams] = useState<Team[]>([]);
+    const [selectedRoles, setSelectedRoles] = useState<UserRole[]>([]);
+
 
     const { toast } = useToast();
     const router = useRouter();
     const form = useForm<TaskFormValues>({
         resolver: zodResolver(taskSchema),
-        defaultValues: {
-        priority: "Medium",
-        urgent: false,
-        },
     });
 
     useEffect(() => {
@@ -80,25 +79,6 @@ export default function CreateTaskPage() {
                 setCurrentUser(user);
                 setAllUsers(users);
 
-                if (user) {
-                     const getAssignable = () => {
-                        switch (user.role) {
-                            case 'Co-founder':
-                            case 'Secretary':
-                                return users;
-                            
-                            case 'Chair of Directors':
-                                return users.filter(u => u.team === user.team && (u.role === 'Lead' || u.role === 'Member'));
-
-                            case 'Lead':
-                                return users.filter(u => u.subTeam === user.subTeam && u.role === 'Member');
-
-                            default:
-                                return [];
-                        }
-                    }
-                    setAssignableUsers(getAssignable());
-                }
             } catch (error) {
                 console.error("Failed to fetch data", error);
                 toast({ variant: "destructive", title: "Error", description: "Failed to load necessary data." });
@@ -108,6 +88,44 @@ export default function CreateTaskPage() {
         }
         fetchData();
     }, [toast]);
+
+    const assignableUsers = useMemo(() => {
+        if (!currentUser) return [];
+
+        const userRole = currentUser.role;
+
+        if (userRole === 'Co-founder' || userRole === 'Secretary') {
+             if (selectedTeams.length === 0 && selectedRoles.length === 0) {
+                return allUsers.filter(u => u.team !== 'Presidium');
+             }
+
+            return allUsers.filter(user => {
+                const teamMatch = selectedTeams.length === 0 || (user.team && selectedTeams.includes(user.team));
+                const roleMatch = selectedRoles.length === 0 || selectedRoles.includes(user.role);
+                return user.team !== 'Presidium' && teamMatch && roleMatch;
+            });
+        }
+        if (userRole === 'Chair of Directors') {
+            return allUsers.filter(u => u.team === currentUser.team && (u.role === 'Lead' || u.role === 'Member'));
+        }
+        if (userRole === 'Lead') {
+            return allUsers.filter(u => u.subTeam === currentUser.subTeam && u.role === 'Member');
+        }
+        return [];
+
+    }, [currentUser, allUsers, selectedTeams, selectedRoles]);
+    
+    const handleTeamFilterChange = (team: Team) => {
+        setSelectedTeams(prev => 
+            prev.includes(team) ? prev.filter(t => t !== team) : [...prev, team]
+        );
+    }
+
+    const handleRoleFilterChange = (role: UserRole) => {
+        setSelectedRoles(prev =>
+            prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+        );
+    }
 
 
   const onSubmit = async (data: TaskFormValues) => {
@@ -193,7 +211,7 @@ export default function CreateTaskPage() {
                         </FormItem>
                     )}
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
                         <FormField
                             control={form.control}
                             name="assignedToId"
@@ -218,30 +236,33 @@ export default function CreateTaskPage() {
                             </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="priority"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Priority</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Select priority" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Low">Low</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="High">High</SelectItem>
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
+                         {(currentUser.role === 'Co-founder' || currentUser.role === 'Secretary') && (
+                            <div className="p-4 border rounded-lg space-y-4">
+                               <FormLabel>Filter Assignees</FormLabel>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium">By Team</p>
+                                        {(['Technology', 'Corporate', 'Creatives'] as Team[]).map(team => (
+                                            <div key={team} className="flex items-center space-x-2">
+                                                <Checkbox id={`team-${team}`} checked={selectedTeams.includes(team)} onCheckedChange={() => handleTeamFilterChange(team)} />
+                                                <label htmlFor={`team-${team}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{team}</label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                     <div className="space-y-2">
+                                        <p className="text-sm font-medium">By Role</p>
+                                        {(['Lead', 'Member'] as UserRole[]).map(role => (
+                                            <div key={role} className="flex items-center space-x-2">
+                                                <Checkbox id={`role-${role}`} checked={selectedRoles.includes(role)} onCheckedChange={() => handleRoleFilterChange(role)} />
+                                                <label htmlFor={`role-${role}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{role}</label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                         )}
                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="grid grid-cols-1 gap-6">
                         <FormField
                         control={form.control}
                         name="dueDate"
@@ -272,38 +293,18 @@ export default function CreateTaskPage() {
                                     mode="single"
                                     selected={field.value}
                                     onSelect={field.onChange}
-                                    disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                                    disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
                                     initialFocus
                                 />
                                 </PopoverContent>
                             </Popover>
+                             <FormDescription>
+                                Tasks with deadlines under 30 hours will be marked as urgent automatically.
+                            </FormDescription>
                             <FormMessage />
                             </FormItem>
                         )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="urgent"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-col rounded-lg border p-4">
-                                     <div className="space-y-0.5">
-                                        <FormLabel className="text-base">
-                                            Mark as Urgent
-                                        </FormLabel>
-                                        <FormDescription>
-                                            Urgent tasks will be flagged for immediate attention.
-                                        </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                        <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                        className="self-start mt-2"
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                            />
                     </div>
                 </CardContent>
                 <CardFooter>

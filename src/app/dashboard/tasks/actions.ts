@@ -5,14 +5,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from 'next/navigation';
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
+import { differenceInHours } from 'date-fns';
+
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   assignedToId: z.string().min(1, "Please assign the task to a user"),
-  priority: z.enum(["Low", "Medium", "High"]),
   dueDate: z.date({ required_error: "A due date is required." }),
-  urgent: z.boolean().default(false),
 });
 
 export async function addTask(data: z.infer<typeof taskSchema>) {
@@ -29,6 +29,8 @@ export async function addTask(data: z.infer<typeof taskSchema>) {
 
   const validatedData = taskSchema.parse(data);
 
+  const isUrgent = differenceInHours(validatedData.dueDate, new Date()) < 30;
+
   const newTask = {
     ...validatedData,
     id: '', // Firestore will generate this
@@ -38,6 +40,8 @@ export async function addTask(data: z.infer<typeof taskSchema>) {
     dueDate: validatedData.dueDate.toISOString(),
     files: [],
     links: [],
+    urgent: isUrgent,
+    priority: "Medium", // Keep for schema compatibility, but not used in UI
   };
 
   const { id, ...taskData } = newTask;
