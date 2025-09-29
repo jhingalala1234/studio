@@ -49,10 +49,10 @@ export default async function Dashboard() {
   });
 
   const chartData = [
-    { name: 'To Do', total: tasks.filter(t => t.status === 'To Do').length, fill: 'var(--color-chart-2)' },
-    { name: 'In Progress', total: tasks.filter(t => t.status === 'In Progress').length, fill: 'var(--color-chart-4)' },
-    { name: 'Done', total: tasks.filter(t => t.status === 'Done').length, fill: 'var(--color-chart-1)' },
-    { name: 'Cancelled', total: tasks.filter(t => t.status === 'Cancelled').length, fill: 'var(--color-chart-5)' },
+    { name: 'To Do', total: tasks.filter(t => t.status === 'To Do').length, fill: 'hsl(var(--chart-2))' },
+    { name: 'In Progress', total: tasks.filter(t => t.status === 'In Progress').length, fill: 'hsl(var(--chart-4))' },
+    { name: 'Done', total: tasks.filter(t => t.status === 'Done').length, fill: 'hsl(var(--chart-1))' },
+    { name: 'Cancelled', total: tasks.filter(t => t.status === 'Cancelled').length, fill: 'hsl(var(--chart-5))' },
   ];
 
   return (
