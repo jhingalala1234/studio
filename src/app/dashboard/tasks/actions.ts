@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { differenceInHours } from 'date-fns';
-import type { TaskStatus, Subtask, TimeLog } from "@/types";
+import type { TaskStatus, Subtask } from "@/types";
 import {FieldValue} from 'firebase-admin/firestore';
 
 const taskSchema = z.object({
@@ -142,7 +142,7 @@ export async function deleteTask(taskId: string) {
         await taskRef.delete();
         console.log(`Successfully deleted task with ID: ${taskId}`);
 
-        const collectionsToDelete = ['logs', 'comments', 'subtasks', 'timelogs', 'notifications'];
+        const collectionsToDelete = ['logs', 'comments', 'subtasks', 'notifications'];
         for (const collection of collectionsToDelete) {
             const snapshot = await adminDb.collection(collection).where("taskId", "==", taskId).get();
             if (!snapshot.empty) {
@@ -417,49 +417,4 @@ export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[])
 
     await batch.commit();
     revalidatePath(`/dashboard/tasks/${taskId}`);
-}
-
-export async function startTimer(taskId: string): Promise<TimeLog | null> {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) throw new Error("You must be logged in.");
-
-    const taskDoc = await adminDb.collection('tasks').doc(taskId).get();
-    if (!taskDoc.exists || taskDoc.data()?.assignedToId !== currentUser.id) {
-        throw new Error("You do not have permission to track time for this task.");
-    }
-
-    // Ensure no other active timer for this user/task
-    const existingActive = await adminDb.collection('timelogs').where('taskId', '==', taskId).where('endTime', '==', null).get();
-    if (!existingActive.empty) {
-        throw new Error("An active timer is already running for this task.");
-    }
-    
-    const newLog = {
-        taskId,
-        userId: currentUser.id,
-        startTime: new Date().toISOString(),
-        endTime: null,
-    };
-
-    const docRef = await adminDb.collection('timelogs').add(newLog);
-    revalidatePath(`/dashboard/tasks/${taskId}`);
-    return { id: docRef.id, ...newLog };
-}
-
-
-export async function stopTimer(logId: string): Promise<TimeLog | null> {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) throw new Error("You must be logged in.");
-    
-    const logRef = adminDb.collection('timelogs').doc(logId);
-    const logDoc = await logRef.get();
-    if (!logDoc.exists || logDoc.data()?.userId !== currentUser.id) {
-         throw new Error("You do not have permission to stop this timer.");
-    }
-
-    await logRef.update({ endTime: new Date().toISOString() });
-    const updatedDoc = await logRef.get();
-
-    revalidatePath(`/dashboard/tasks/${logDoc.data()?.taskId}`);
-    return { id: updatedDoc.id, ...updatedDoc.data() } as TimeLog;
 }

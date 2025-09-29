@@ -1,7 +1,7 @@
 // This is a server-side file.
 'use server';
 
-import type { User, Task, Log, Comment, Subtask, TimeLog, Notification } from '@/types';
+import type { User, Task, Log, Comment, Subtask, Notification } from '@/types';
 import { adminDb } from './firebase-admin';
 import { cache } from 'react';
 
@@ -49,11 +49,6 @@ export const getCommentsForTask = cache(async (taskId: string): Promise<Comment[
 export const getSubtasksForTask = cache(async (taskId: string): Promise<Subtask[]> => {
     const subtasksSnapshot = await adminDb.collection('subtasks').where('taskId', '==', taskId).orderBy('order', 'asc').get();
     return subtasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subtask));
-});
-
-export const getTimeLogsForTask = cache(async (taskId: string): Promise<TimeLog[]> => {
-    const timeLogsSnapshot = await adminDb.collection('timelogs').where('taskId', '==', taskId).orderBy('startTime', 'desc').get();
-    return timeLogsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TimeLog));
 });
 
 export const getNotificationsForUser = cache(async (userId: string): Promise<Notification[]> => {

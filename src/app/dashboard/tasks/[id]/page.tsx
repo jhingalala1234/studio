@@ -4,7 +4,6 @@ import {
   getAllUsers,
   getCommentsForTask,
   getSubtasksForTask,
-  getTimeLogsForTask,
 } from '@/lib/data';
 import { getCurrentUser } from '@/lib/auth';
 import {
@@ -23,7 +22,6 @@ import {
   Link as LinkIcon,
   MessageSquare,
   CheckSquare,
-  Clock,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -39,7 +37,6 @@ import TaskStatusUpdater from './task-status-updater';
 import AddLinkForm from './add-link-form';
 import AddCommentForm from './add-comment-form';
 import SubtasksManager from './subtasks-manager';
-import TimeTracker from './time-tracker';
 
 export default async function TaskDetailsPage({
   params,
@@ -54,10 +51,9 @@ export default async function TaskDetailsPage({
     notFound();
   }
 
-  const [comments, subtasks, timeLogs] = await Promise.all([
+  const [comments, subtasks] = await Promise.all([
     getCommentsForTask(task.id),
     getSubtasksForTask(task.id),
-    getTimeLogsForTask(task.id),
   ]);
 
   const assignee = users.find(u => u.id === task.assignedToId);
@@ -216,19 +212,6 @@ export default async function TaskDetailsPage({
               </div>
             </CardContent>
           </Card>
-
-          {isAssignee && (
-             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" /> Time Tracker
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TimeTracker taskId={task.id} initialTimeLogs={timeLogs} />
-              </CardContent>
-            </Card>
-          )}
 
           <Card>
             <CardHeader>

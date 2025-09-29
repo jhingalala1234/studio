@@ -72,14 +72,6 @@ export interface Subtask {
     order: number;
 }
 
-export interface TimeLog {
-    id: string;
-    taskId: string;
-    userId: string;
-    startTime: string;
-    endTime: string | null;
-}
-
 export interface Notification {
     id: string;
     userId: string; // The user who receives the notification
