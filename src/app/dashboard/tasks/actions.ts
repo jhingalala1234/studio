@@ -29,9 +29,9 @@ export async function addTask(data: FormData) {
 
   try {
     const rawData = {
-      title: data.get('title'),
-      description: data.get('description'),
-      assignedToId: data.get('assignedToId'),
+      title: data.get('title') || '',
+      description: data.get('description') || '',
+      assignedToId: data.get('assignedToId') || '',
       dueDate: new Date(data.get('dueDate') as string),
       links: data.getAll('links[]').map(l => l.toString()).filter(l => l),
     };
@@ -49,28 +49,26 @@ export async function addTask(data: FormData) {
 
     // File uploads
     const files = data.getAll('files') as File[];
-    const fileUrls: string[] = [];
+    const fileUploadPromises: Promise<string>[] = [];
+    const bucket = adminStorage.bucket(`gs://${process.env.FIREBASE_STORAGE_BUCKET}`);
 
-    if (files.length > 0) {
-      const bucket = adminStorage.bucket(`gs://${process.env.FIREBASE_STORAGE_BUCKET}`);
-      for (const file of files) {
-        if (file && file.size > 0) {
-          const fileBuffer = Buffer.from(await file.arrayBuffer());
-          const filePath = `tasks/${Date.now()}-${file.name}`;
-          const fileRef = bucket.file(filePath);
-          await fileRef.save(fileBuffer, {
-              metadata: { contentType: file.type }
-          });
-          
-          // Make the file public before getting the URL
-          await fileRef.makePublic();
+    for (const file of files) {
+      if (file && file.size > 0) {
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
+        const filePath = `tasks/${Date.now()}-${file.name}`;
+        const fileRef = bucket.file(filePath);
 
-          const downloadUrl = getDownloadURL(fileRef);
-          fileUrls.push(downloadUrl);
-        }
+        const promise = fileRef.save(fileBuffer, {
+            metadata: { contentType: file.type }
+        }).then(async () => {
+            await fileRef.makePublic();
+            return getDownloadURL(fileRef);
+        });
+        fileUploadPromises.push(promise);
       }
     }
-
+    
+    const fileUrls = await Promise.all(fileUploadPromises);
 
     const newTask = {
       title,
@@ -86,6 +84,7 @@ export async function addTask(data: FormData) {
     };
 
     const docRef = await adminDb.collection("tasks").add(newTask);
+    console.log("Successfully created task with ID:", docRef.id);
     
     const assigneeSnapshot = await adminDb.collection('users').doc(newTask.assignedToId).get();
     if (!assigneeSnapshot.exists) {
