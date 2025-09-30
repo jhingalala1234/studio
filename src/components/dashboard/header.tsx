@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, Search, Users, CalendarCheck, GanttChartSquare } from 'lucide-react';
+import { Bell, Menu, Search, Users, CalendarCheck, GanttChartSquare, BotMessageSquare, FilePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,6 +24,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: null },
   { href: '/dashboard/tasks', label: 'Tasks', icon: null },
   { href: '/dashboard/gantt', label: 'Gantt', icon: GanttChartSquare },
+  { href: '/dashboard/generate-tasks', label: 'Generate Tasks', icon: FilePlus },
   { href: '/dashboard/users', label: 'Users', icon: null },
   { href: '/dashboard/my-week', label: 'My Week', icon: CalendarCheck },
   { href: '/dashboard/logs', label: 'Logs', icon: null },

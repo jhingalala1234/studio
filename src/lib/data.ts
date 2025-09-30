@@ -1,7 +1,7 @@
 // This is a server-side file.
 'use server';
 
-import type { User, Task, Log, Comment, Subtask, Notification } from '@/types';
+import type { User, Task, Log, Comment, Subtask, Notification, Announcement } from '@/types';
 import { adminDb } from './firebase-admin';
 import { cache } from 'react';
 
@@ -41,6 +41,12 @@ export const getAllLogs = cache(async (): Promise<Log[]> => {
     return logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Log));
 });
 
+export const getLogsForTask = cache(async (taskId: string): Promise<Log[]> => {
+    const logsSnapshot = await adminDb.collection('logs').where('taskId', '==', taskId).orderBy('timestamp', 'desc').get();
+    return logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Log));
+});
+
+
 export const getCommentsForTask = cache(async (taskId: string): Promise<Comment[]> => {
     const commentsSnapshot = await adminDb.collection('comments').where('taskId', '==', taskId).orderBy('createdAt', 'asc').get();
     return commentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
@@ -54,4 +60,9 @@ export const getSubtasksForTask = cache(async (taskId: string): Promise<Subtask[
 export const getNotificationsForUser = cache(async (userId: string): Promise<Notification[]> => {
     const notificationsSnapshot = await adminDb.collection('notifications').where('userId', '==', userId).orderBy('createdAt', 'desc').limit(50).get();
     return notificationsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+});
+
+export const getAnnouncements = cache(async (): Promise<Announcement[]> => {
+    const announcementsSnapshot = await adminDb.collection('announcements').orderBy('createdAt', 'desc').limit(10).get();
+    return announcementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement));
 });

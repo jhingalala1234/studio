@@ -40,6 +40,7 @@ import AddCommentForm from './add-comment-form';
 import SubtasksManager from './subtasks-manager';
 import MarkAsDoneButton from '../mark-as-done-button';
 import { Button } from '@/components/ui/button';
+import SummarizeTaskDialog from './summarize-task-dialog';
 
 export default async function TaskDetailsPage({
   params,
@@ -107,6 +108,7 @@ export default async function TaskDetailsPage({
             )}
           </div>
            <div className="flex items-center gap-2">
+            <SummarizeTaskDialog taskId={task.id} />
             {isAssignee && task.status !== 'Done' && task.status !== 'Cancelled' && (
               <MarkAsDoneButton taskId={task.id} />
             )}
