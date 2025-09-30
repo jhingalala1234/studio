@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, Search, Users, CalendarCheck, GanttChartSquare, BotMessageSquare, FilePlus, Rss } from 'lucide-react';
+import { Menu, Search, Users, CalendarCheck, GanttChartSquare, FilePlus, Rss } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -20,6 +20,8 @@ import { logout } from '@/app/actions';
 import { Logo } from '@/components/logo';
 import type { User, UserRole, Team } from '@/types';
 import { cn } from '@/lib/utils';
+import { NotificationPopover } from './notification-popover';
+
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: null },
@@ -149,12 +151,7 @@ export function Header({ user }: { user: User }) {
               />
             </div>
 
-            <Button variant="ghost" size="icon" className="rounded-full" asChild>
-              <Link href="/dashboard/notifications">
-                <Bell className="h-5 w-5" />
-                <span className="sr-only">Toggle notifications</span>
-              </Link>
-            </Button>
+            <NotificationPopover user={user} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
