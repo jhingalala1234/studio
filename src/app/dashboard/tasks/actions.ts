@@ -125,6 +125,86 @@ export async function addTask(data: FormData) {
 }
 
 
+export async function updateTask(taskId: string, data: FormData) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    throw new Error("You must be logged in to edit a task.");
+  }
+  
+  const taskRef = adminDb.collection("tasks").doc(taskId);
+  const taskDoc = await taskRef.get();
+
+  if (!taskDoc.exists) {
+      throw new Error("Task not found.");
+  }
+  const task = taskDoc.data();
+  
+  const isAssigner = task?.assignedById === currentUser.id;
+  const isPresidium = currentUser.role === 'Co-founder' || currentUser.role === 'Secretary';
+
+  if (!isAssigner && !isPresidium) {
+      throw new Error("You do not have permission to edit this task.");
+  }
+
+  try {
+    const rawData = {
+      title: data.get('title') || '',
+      description: data.get('description') || '',
+      assignedToIds: data.getAll('assignedToIds[]') as string[],
+      dueDate: new Date(data.get('dueDate') as string),
+      links: data.getAll('links[]').map(l => l.toString()).filter(l => l),
+    };
+
+    const validatedFields = taskSchema.safeParse(rawData);
+
+    if (!validatedFields.success) {
+      console.error('Validation Errors:', validatedFields.error.flatten().fieldErrors);
+      throw new Error("Invalid fields provided.");
+    }
+
+    const { title, description, assignedToIds, dueDate, links } = validatedFields.data;
+    
+    const isUrgent = differenceInHours(dueDate, new Date()) < 30;
+
+    const updatedTask = {
+      title,
+      description: description || '',
+      assignedToIds,
+      dueDate: dueDate.toISOString(),
+      links: links || [],
+      urgent: isUrgent,
+    };
+
+    await taskRef.update(updatedTask);
+    
+    const logMessage = `${currentUser.name} edited the task "${updatedTask.title}".`;
+    await adminDb.collection('logs').add({
+      message: logMessage,
+      timestamp: new Date().toISOString(),
+      userId: currentUser.id,
+      taskId: taskId,
+    });
+
+
+  } catch (error) {
+    console.error("Failed to update task:", error);
+    if (error instanceof Error && !error.message.includes('NEXT_REDIRECT')) {
+        throw new Error(error.message);
+    }
+  }
+
+
+  revalidatePath("/dashboard/tasks");
+  revalidatePath(`/dashboard/tasks/${taskId}`);
+  revalidatePath(`/dashboard/tasks/${taskId}/edit`);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/my-week");
+  revalidatePath("/dashboard/tasks/board");
+  redirect(`/dashboard/tasks/${taskId}`);
+}
+
+
+
 export async function deleteTask(taskId: string) {
     const currentUser = await getCurrentUser();
     if (!currentUser) {
@@ -139,8 +219,11 @@ export async function deleteTask(taskId: string) {
     }
 
     const task = taskDoc.data();
+    
+    const isAssigner = task?.assignedById === currentUser.id;
+    const isPresidium = currentUser.role === 'Co-founder' || currentUser.role === 'Secretary';
 
-    if (task?.assignedById !== currentUser.id) {
+    if (!isAssigner && !isPresidium) {
         throw new Error("You do not have permission to delete this task.");
     }
 

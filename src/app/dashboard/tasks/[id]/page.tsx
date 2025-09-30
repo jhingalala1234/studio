@@ -22,6 +22,7 @@ import {
   Link as LinkIcon,
   MessageSquare,
   CheckSquare,
+  Pencil,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -38,6 +39,7 @@ import AddLinkForm from './add-link-form';
 import AddCommentForm from './add-comment-form';
 import SubtasksManager from './subtasks-manager';
 import MarkAsDoneButton from '../mark-as-done-button';
+import { Button } from '@/components/ui/button';
 
 export default async function TaskDetailsPage({
   params,
@@ -60,8 +62,12 @@ export default async function TaskDetailsPage({
   const assignedToIds = task.assignedToIds || [];
   const assignees = users.filter(u => assignedToIds.includes(u.id));
   const assigner = users.find(u => u.id === task.assignedById);
+
   const isAssigner = currentUser.id === task.assignedById;
   const isAssignee = assignedToIds.includes(currentUser.id);
+  const isPresidium = currentUser.role === 'Co-founder' || currentUser.role === 'Secretary';
+  const canEdit = isPresidium || isAssigner;
+  const canDelete = isAssigner;
 
   const statusBadgeVariant = {
     'To Do': 'outline',
@@ -104,7 +110,15 @@ export default async function TaskDetailsPage({
             {isAssignee && task.status !== 'Done' && task.status !== 'Cancelled' && (
               <MarkAsDoneButton taskId={task.id} />
             )}
-            {isAssigner && <DeleteTaskButton taskId={task.id} />}
+            {canEdit && (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/dashboard/tasks/${task.id}/edit`}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit Task
+                </Link>
+              </Button>
+            )}
+            {canDelete && <DeleteTaskButton taskId={task.id} />}
           </div>
         </div>
         <p className="text-muted-foreground">
