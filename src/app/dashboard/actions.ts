@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from "zod";
@@ -5,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { FieldValue } from "firebase-admin/firestore";
+import { redirect } from 'next/navigation';
 
 async function createNotification(
   userId: string,
@@ -91,6 +93,7 @@ export async function createAnnouncement(data: FormData) {
 
   revalidatePath("/dashboard/announcements");
   revalidatePath("/dashboard");
+  redirect('/dashboard/announcements');
 }
 
 

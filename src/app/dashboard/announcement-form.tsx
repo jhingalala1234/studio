@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -17,13 +18,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { createAnnouncement } from './actions';
 import { useTransition, useState } from 'react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { ChevronsUpDown, PlusCircle, Trash } from 'lucide-react';
+import { PlusCircle, Trash } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { useRouter } from 'next/navigation';
 
 
 const announcementSchema = z.object({
@@ -55,9 +52,9 @@ const announcementSchema = z.object({
 type AnnouncementFormValues = z.infer<typeof announcementSchema>;
 
 
-export default function AnnouncementForm({ onAnnouncementCreated }: { onAnnouncementCreated: () => void }) {
+export default function AnnouncementForm() {
+    const router = useRouter();
     const [isPending, startTransition] = useTransition();
-    const [isOpen, setIsOpen] = useState(false);
     const { toast } = useToast();
     
     const form = useForm<AnnouncementFormValues>({
@@ -99,19 +96,17 @@ export default function AnnouncementForm({ onAnnouncementCreated }: { onAnnounce
                 if (data.pollOptions) {
                     data.pollOptions.forEach(opt => formData.append('pollOptions[]', opt.text));
                 }
+            } else {
+                 formData.append('isPoll', 'false');
             }
             
             await createAnnouncement(formData);
-            
-            toast({
-                title: 'Announcement Posted',
-                description: 'Your announcement is now visible to the organization.',
-            });
-            form.reset();
-            setIsOpen(false);
-            onAnnouncementCreated();
 
         } catch (error) {
+            if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+                // This is expected after successful creation
+                return;
+            }
             console.error(error);
             toast({
                 variant: 'destructive',
@@ -123,61 +118,113 @@ export default function AnnouncementForm({ onAnnouncementCreated }: { onAnnounce
   };
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="glass rounded-lg">
-        <div className="flex items-center justify-between px-4 py-3">
-            <h4 className="text-sm font-semibold">Post a New Announcement</h4>
-            <CollapsibleTrigger asChild>
-                 <Button variant="ghost" size="sm" className="w-9 p-0">
-                    <ChevronsUpDown className="h-4 w-4" />
-                    <span className="sr-only">Toggle</span>
-                </Button>
-            </CollapsibleTrigger>
-        </div>
-        <CollapsibleContent className="space-y-4 p-4 border-t">
-             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
+    <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. Q3 All-Hands Meeting" {...field} disabled={isPending} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="content"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Content</FormLabel>
+                        <FormControl>
+                            <Textarea placeholder="Write your announcement here..." {...field} rows={5} disabled={isPending} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            <div className="space-y-4">
+                <FormLabel>Reference Links</FormLabel>
+                {linkFields.map((field, index) => (
+                     <FormField
+                        key={field.id}
                         control={form.control}
-                        name="title"
+                        name={`links.${index}.value`}
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Title</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="e.g. Q3 All-Hands Meeting" {...field} disabled={isPending} />
-                                </FormControl>
+                                <div className="flex items-center gap-2">
+                                    <FormControl>
+                                        <Input {...field} placeholder="https://example.com" />
+                                    </FormControl>
+                                    
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeLink(index)} disabled={linkFields.length <= 1}>
+                                        <Trash className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                    
+                                </div>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => appendLink({ value: "" })}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Link
+                </Button>
+            </div>
+            
+            <FormField
+                control={form.control}
+                name="isPoll"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <FormLabel>Include a Poll</FormLabel>
+                            <FormMessage />
+                        </div>
+                        <FormControl>
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                    </FormItem>
+                )}
+            />
+
+            {isPoll && (
+                <div className="space-y-4 p-4 border rounded-lg">
                      <FormField
                         control={form.control}
-                        name="content"
+                        name="pollQuestion"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Content</FormLabel>
+                                <FormLabel>Poll Question</FormLabel>
                                 <FormControl>
-                                    <Textarea placeholder="Write your announcement here..." {...field} rows={5} disabled={isPending} />
+                                    <Input placeholder="What should we focus on next quarter?" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
-
-                    <div className="space-y-4">
-                        <FormLabel>Reference Links</FormLabel>
-                        {linkFields.map((field, index) => (
-                             <FormField
+                    <div className="space-y-2">
+                        <FormLabel>Poll Options</FormLabel>
+                        {pollOptionFields.map((field, index) => (
+                            <FormField
                                 key={field.id}
                                 control={form.control}
-                                name={`links.${index}.value`}
+                                name={`pollOptions.${index}.text`}
                                 render={({ field }) => (
                                     <FormItem>
                                         <div className="flex items-center gap-2">
                                             <FormControl>
-                                                <Input {...field} placeholder="https://example.com" />
+                                                <Input {...field} placeholder={`Option ${index + 1}`} />
                                             </FormControl>
-                                            {index > 0 && (
-                                                <Button type="button" variant="ghost" size="icon" onClick={() => removeLink(index)}>
+                                            {pollOptionFields.length > 2 && (
+                                                <Button type="button" variant="ghost" size="icon" onClick={() => removePollOption(index)}>
                                                     <Trash className="h-4 w-4 text-destructive" />
                                                 </Button>
                                             )}
@@ -187,85 +234,23 @@ export default function AnnouncementForm({ onAnnouncementCreated }: { onAnnounce
                                 )}
                             />
                         ))}
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendLink({ value: "" })}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Link
-                        </Button>
                     </div>
-                    
-                    <FormField
-                        control={form.control}
-                        name="isPoll"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                <div className="space-y-0.5">
-                                    <FormLabel>Include a Poll</FormLabel>
-                                    <FormMessage />
-                                </div>
-                                <FormControl>
-                                    <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
-                            </FormItem>
-                        )}
-                    />
-
-                    {isPoll && (
-                        <div className="space-y-4 p-4 border rounded-lg">
-                             <FormField
-                                control={form.control}
-                                name="pollQuestion"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Poll Question</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="What should we focus on next quarter?" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <div className="space-y-2">
-                                <FormLabel>Poll Options</FormLabel>
-                                {pollOptionFields.map((field, index) => (
-                                    <FormField
-                                        key={field.id}
-                                        control={form.control}
-                                        name={`pollOptions.${index}.text`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <div className="flex items-center gap-2">
-                                                    <FormControl>
-                                                        <Input {...field} placeholder={`Option ${index + 1}`} />
-                                                    </FormControl>
-                                                    {pollOptionFields.length > 2 && (
-                                                        <Button type="button" variant="ghost" size="icon" onClick={() => removePollOption(index)}>
-                                                            <Trash className="h-4 w-4 text-destructive" />
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                ))}
-                            </div>
-                            <Button type="button" variant="outline" size="sm" onClick={() => appendPollOption({ text: "" })}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Option
-                            </Button>
-                        </div>
-                    )}
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendPollOption({ text: "" })}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Option
+                    </Button>
+                </div>
+            )}
 
 
-                    <div className="flex justify-end">
-                        <Button type="submit" disabled={isPending}>
-                            {isPending ? 'Posting...' : 'Post Announcement'}
-                        </Button>
-                    </div>
-                </form>
-            </Form>
-        </CollapsibleContent>
-    </Collapsible>
+            <div className="flex justify-end gap-4">
+                <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isPending}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                    {isPending ? 'Posting...' : 'Post Announcement'}
+                </Button>
+            </div>
+        </form>
+    </Form>
   );
 }
