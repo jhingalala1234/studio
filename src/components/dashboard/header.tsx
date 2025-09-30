@@ -39,10 +39,24 @@ const getUserTitle = (role: UserRole, team: Team | null): string => {
   return role;
 }
 
+const getGreeting = () => {
+    const currentHour = new Date().getHours();
+    if (currentHour < 12) {
+        return "Good morning";
+    } else if (currentHour < 17) {
+        return "Good afternoon";
+    } else if (currentHour < 21) {
+        return "Good evening";
+    } else {
+        return "Burning the midnight oil";
+    }
+}
+
 export function Header({ user }: { user: User }) {
   const userInitials = user.name.split(' ').map((n) => n[0]).join('');
   const pathname = usePathname();
   const userTitle = getUserTitle(user.role, user.team);
+  const greeting = getGreeting();
 
   return (
     <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black/50 backdrop-blur-lg">
@@ -116,7 +130,7 @@ export function Header({ user }: { user: User }) {
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
               <h1 className="font-headline text-2xl font-bold md:text-3xl text-white">
-                Welcome back, {user?.name.split(' ')[0]}!
+                {greeting}, {user?.name.split(' ')[0]}!
               </h1>
               <p className="text-md text-muted-foreground">You are the {userTitle} at CloudX.</p>
           </div>
