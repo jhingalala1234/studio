@@ -14,7 +14,7 @@ export default async function TasksLayout({ children }: { children: ReactNode })
 
   const canCreateTask = !!currentUser;
   
-  const getVisibleTasks = () => {
+  const getVisibleTasks = async () => {
     const { role, id } = currentUser;
 
     if (role === 'Co-founder' || role === 'Secretary') {
@@ -26,7 +26,7 @@ export default async function TasksLayout({ children }: { children: ReactNode })
     }
 
     if (role === 'Chair of Directors') {
-      const subordinateIds = getSubordinates(id, allUsers);
+      const subordinateIds = await getSubordinates(id, allUsers);
       const teamMemberIds = new Set([id, ...subordinateIds]);
 
       return allTasks.filter(task =>
@@ -36,7 +36,7 @@ export default async function TasksLayout({ children }: { children: ReactNode })
     }
 
     if (role === 'Lead') {
-      const subordinateIds = getSubordinates(id, allUsers);
+      const subordinateIds = await getSubordinates(id, allUsers);
       const subTeamMemberIds = new Set([id, ...subordinateIds]);
 
       return allTasks.filter(task =>
@@ -48,7 +48,7 @@ export default async function TasksLayout({ children }: { children: ReactNode })
     return [];
   };
 
-  const visibleTasks = getVisibleTasks();
+  const visibleTasks = await getVisibleTasks();
   
   const enrichedTasks = visibleTasks.map(task => {
     const assignees = allUsers.filter(u => (task.assignedToIds || []).includes(u.id));

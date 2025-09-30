@@ -22,7 +22,7 @@ export default async function LogsPage() {
   const tasks = await getAllTasks();
   const allLogs = await getAllLogs();
 
-  const getVisibleLogs = () => {
+  const getVisibleLogs = async () => {
     const userRole = currentUser.role;
 
     // Presidium can see all logs
@@ -34,7 +34,7 @@ export default async function LogsPage() {
     const logsByMe = allLogs.filter(log => log.userId === currentUser.id);
 
     // Get tasks where the user is either the assignee or the assigner
-    const myInvolvedTasks = tasks.filter(t => t.assignedToId === currentUser.id || t.assignedById === currentUser.id);
+    const myInvolvedTasks = tasks.filter(t => (t.assignedToIds || []).includes(currentUser.id) || t.assignedById === currentUser.id);
     const myInvolvedTaskIds = myInvolvedTasks.map(t => t.id);
 
     // Get logs related to those tasks
@@ -44,7 +44,7 @@ export default async function LogsPage() {
 
     // If the user is a manager, get logs from their subordinates
     if (userRole === 'Chair of Directors' || userRole === 'Lead') {
-      const subordinateIds = getSubordinates(currentUser.id, users);
+      const subordinateIds = await getSubordinates(currentUser.id, users);
       subordinateLogs = allLogs.filter(log => subordinateIds.includes(log.userId));
     }
     
@@ -55,7 +55,7 @@ export default async function LogsPage() {
     return Array.from(uniqueLogIds).map(id => relevantLogs.find(l => l.id === id)!);
   };
 
-  const filteredLogs = getVisibleLogs();
+  const filteredLogs = await getVisibleLogs();
 
 
   const enrichedLogs = filteredLogs
