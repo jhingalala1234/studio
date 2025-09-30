@@ -23,12 +23,12 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: null },
-  { href: '/dashboard/announcements', label: 'Announcements', icon: Rss },
   { href: '/dashboard/tasks', label: 'Tasks', icon: null },
+  { href: '/dashboard/my-week', label: 'My Week', icon: CalendarCheck },
   { href: '/dashboard/gantt', label: 'Gantt', icon: GanttChartSquare },
   { href: '/dashboard/generate-tasks', label: 'Generate Tasks', icon: FilePlus },
+  { href: '/dashboard/announcements', label: 'Announcements', icon: Rss },
   { href: '/dashboard/users', label: 'Users', icon: null },
-  { href: '/dashboard/my-week', label: 'My Week', icon: CalendarCheck },
   { href: '/dashboard/logs', label: 'Logs', icon: null },
 ];
 
