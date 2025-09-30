@@ -57,10 +57,11 @@ export default async function TaskDetailsPage({
     getSubtasksForTask(task.id),
   ]);
 
-  const assignees = users.filter(u => task.assignedToIds.includes(u.id));
+  const assignedToIds = task.assignedToIds || [];
+  const assignees = users.filter(u => assignedToIds.includes(u.id));
   const assigner = users.find(u => u.id === task.assignedById);
   const isAssigner = currentUser.id === task.assignedById;
-  const isAssignee = task.assignedToIds.includes(currentUser.id);
+  const isAssignee = assignedToIds.includes(currentUser.id);
 
   const statusBadgeVariant = {
     'To Do': 'outline',
