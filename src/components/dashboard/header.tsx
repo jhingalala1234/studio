@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -19,7 +20,6 @@ import { logout } from '@/app/actions';
 import { Logo } from '@/components/logo';
 import type { User, UserRole, Team } from '@/types';
 import { cn } from '@/lib/utils';
-import { SearchController } from './search-controller';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: null },
@@ -122,7 +122,14 @@ export function Header({ user }: { user: User }) {
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <SearchController currentUser={user} />
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
+              />
+            </div>
 
             <Button variant="ghost" size="icon" className="rounded-full" asChild>
               <Link href="/dashboard/notifications">
