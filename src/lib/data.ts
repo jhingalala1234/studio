@@ -1,7 +1,7 @@
 // This is a server-side file.
 'use server';
 
-import type { User, Task, Log, Comment, Subtask, Notification, Announcement } from '@/types';
+import type { User, Task, Log, Comment, Subtask, Notification, Announcement, AnnouncementComment, AnnouncementReaction, PollVote } from '@/types';
 import { adminDb } from './firebase-admin';
 import { cache } from 'react';
 
@@ -65,4 +65,22 @@ export const getNotificationsForUser = cache(async (userId: string): Promise<Not
 export const getAnnouncements = cache(async (): Promise<Announcement[]> => {
     const announcementsSnapshot = await adminDb.collection('announcements').orderBy('createdAt', 'desc').limit(10).get();
     return announcementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement));
+});
+
+
+export const getCommentsForAnnouncement = cache(async (announcementId: string): Promise<AnnouncementComment[]> => {
+    const commentsSnapshot = await adminDb.collection('announcementComments').where('announcementId', '==', announcementId).orderBy('createdAt', 'asc').get();
+    return commentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnnouncementComment));
+});
+
+export const getReactionsForAnnouncements = cache(async (announcementIds: string[]): Promise<AnnouncementReaction[]> => {
+    if (announcementIds.length === 0) return [];
+    const reactionsSnapshot = await adminDb.collection('announcementReactions').where('announcementId', 'in', announcementIds).get();
+    return reactionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnnouncementReaction));
+});
+
+export const getPollVotesForAnnouncements = cache(async (announcementIds: string[]): Promise<PollVote[]> => {
+    if (announcementIds.length === 0) return [];
+    const votesSnapshot = await adminDb.collection('pollVotes').where('announcementId', 'in', announcementIds).get();
+    return votesSnapshot.docs.map(doc => ({ ...doc.data() } as PollVote));
 });

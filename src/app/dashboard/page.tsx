@@ -125,30 +125,31 @@ export default async function Dashboard() {
         </div>
         <Card className="xl:col-span-2 glass">
            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Rss /> Announcements</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Rss /> Recent Announcements</CardTitle>
               <CardDescription>
-                Latest updates from the organization leadership.
+                The latest updates from the organization leadership.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {canPostAnnouncement && <AnnouncementForm />}
               <div className="space-y-4 max-h-48 overflow-y-auto">
-                {enrichedAnnouncements.map(announcement => (
+                {enrichedAnnouncements.slice(0, 3).map(announcement => (
                     <div key={announcement.id} className="flex items-start gap-4">
                         <Avatar className="h-9 w-9">
                             <AvatarImage src={announcement.authorAvatar} alt={announcement.authorName} />
                             <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium">{announcement.title}</p>
-                            <p className="text-sm text-muted-foreground">{announcement.content}</p>
-                             <p className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(announcement.createdAt), { addSuffix: true })} by {announcement.authorName}
-                            </p>
+                             <Link href={`/dashboard/announcements#${announcement.id}`} className="hover:underline">
+                                <p className="text-sm font-medium">{announcement.title}</p>
+                            </Link>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{announcement.content}</p>
                         </div>
                     </div>
                 ))}
               </div>
+                <Button asChild variant="outline" className="w-full">
+                    <Link href="/dashboard/announcements">View All Announcements</Link>
+                </Button>
             </CardContent>
         </Card>
       </div>

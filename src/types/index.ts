@@ -77,11 +77,27 @@ export interface Notification {
     id: string;
     userId: string; // The user who receives the notification
     actorId: string; // The user who performed the action
-    type: 'TASK_ASSIGNED' | 'STATUS_UPDATED' | 'COMMENT_ADDED' | 'DEADLINE_APPROACHING';
+    type: 'TASK_ASSIGNED' | 'STATUS_UPDATED' | 'COMMENT_ADDED' | 'DEADLINE_APPROACHING' | 'ANNOUNCEMENT_NEW';
     message: string; // HTML-enabled message
     link: string; // Link to the relevant page (e.g., task details)
     isRead: boolean;
     createdAt: string;
+}
+
+export interface PollOption {
+  id: string;
+  text: string;
+}
+
+export interface Poll {
+  question: string;
+  options: PollOption[];
+}
+
+export interface PollVote {
+    announcementId: string;
+    userId: string;
+    optionId: string;
 }
 
 export interface Announcement {
@@ -89,5 +105,22 @@ export interface Announcement {
     title: string;
     content: string;
     authorId: string;
+    createdAt: string;
+    links?: string[];
+    poll?: Poll;
+}
+
+export interface AnnouncementReaction {
+    id: string;
+    announcementId: string;
+    userId: string;
+    emoji: string;
+}
+
+export interface AnnouncementComment {
+    id: string;
+    announcementId: string;
+    userId: string;
+    message: string;
     createdAt: string;
 }

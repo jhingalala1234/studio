@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, Search, Users, CalendarCheck, GanttChartSquare, BotMessageSquare, FilePlus } from 'lucide-react';
+import { Bell, Menu, Search, Users, CalendarCheck, GanttChartSquare, BotMessageSquare, FilePlus, Rss } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,9 +19,11 @@ import { logout } from '@/app/actions';
 import { Logo } from '@/components/logo';
 import type { User, UserRole, Team } from '@/types';
 import { cn } from '@/lib/utils';
+import { SearchController } from './search-controller';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: null },
+  { href: '/dashboard/announcements', label: 'Announcements', icon: Rss },
   { href: '/dashboard/tasks', label: 'Tasks', icon: null },
   { href: '/dashboard/gantt', label: 'Gantt', icon: GanttChartSquare },
   { href: '/dashboard/generate-tasks', label: 'Generate Tasks', icon: FilePlus },
@@ -120,16 +122,7 @@ export function Header({ user }: { user: User }) {
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <form>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search..."
-                  className="w-full rounded-lg bg-background/80 pl-8 md:w-[200px] lg:w-[250px]"
-                />
-              </div>
-            </form>
+            <SearchController currentUser={user} />
 
             <Button variant="ghost" size="icon" className="rounded-full" asChild>
               <Link href="/dashboard/notifications">
