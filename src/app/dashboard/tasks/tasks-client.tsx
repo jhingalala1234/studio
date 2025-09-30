@@ -34,30 +34,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { Task, User } from '@/types';
 import { useMemo } from 'react';
 import MarkAsDoneButton from './mark-as-done-button';
-
-// Helper function to get all subordinates of a manager (recursively)
-const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
-  const manager = allUsers.find(u => u.id === managerId);
-  if (!manager) return [];
-
-  let directSubordinates: User[] = [];
-
-  // A Chair's subordinates are Leads and Members in their team
-  if (manager.role === 'Chair of Directors') {
-    directSubordinates = allUsers.filter(user => user.team === manager.team && (user.role === 'Lead' || user.role === 'Member'));
-  }
-  // A Lead's subordinates are Members in their sub-team
-  else if (manager.role === 'Lead') {
-    directSubordinates = allUsers.filter(user => user.subTeam === manager.subTeam && user.role === 'Member');
-  }
-
-  const subordinateIds = directSubordinates.map(s => s.id);
-
-  // Recursively find subordinates of the direct subordinates (for Chairs overseeing Leads)
-  const nestedSubordinates = subordinateIds.flatMap(id => getSubordinates(id, allUsers));
-  
-  return [...subordinateIds, ...nestedSubordinates];
-};
+import { getSubordinates } from '@/lib/hierarchy';
 
 
 export default function TasksClient({ currentUser, users, allTasks: initialTasks }: { currentUser: User, users: User[], allTasks: Task[] }) {

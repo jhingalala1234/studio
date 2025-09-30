@@ -11,6 +11,8 @@ import type { Task, User, TaskStatus } from '@/types';
 import { KanbanColumn } from './kanban-column';
 import { updateTaskStatus } from '../actions';
 import { useToast } from '@/hooks/use-toast';
+import { getSubordinates } from '@/lib/hierarchy';
+
 
 type AssigneeInfo = { name: string; avatar?: string };
 
@@ -28,25 +30,6 @@ type BoardState = {
   tasks: Record<string, EnrichedTask>;
   columns: Record<TaskStatus, ColumnData>;
   columnOrder: TaskStatus[];
-};
-
-const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
-  const manager = allUsers.find(u => u.id === managerId);
-  if (!manager) return [];
-
-  let directSubordinates: User[] = [];
-
-  if (manager.role === 'Chair of Directors') {
-    directSubordinates = allUsers.filter(user => user.team === manager.team && (user.role === 'Lead' || user.role === 'Member'));
-  }
-  else if (manager.role === 'Lead') {
-    directSubordinates = allUsers.filter(user => user.subTeam === manager.subTeam && user.role === 'Member');
-  }
-
-  const subordinateIds = directSubordinates.map(s => s.id);
-  const nestedSubordinates = subordinateIds.flatMap(id => getSubordinates(id, allUsers));
-  
-  return [...subordinateIds, ...nestedSubordinates];
 };
 
 

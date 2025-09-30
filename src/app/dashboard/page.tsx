@@ -58,7 +58,6 @@ export default async function Dashboard() {
     { name: 'To Do', total: tasks.filter(t => t.status === 'To Do').length, fill: 'hsl(var(--chart-2))' },
     { name: 'In Progress', total: tasks.filter(t => t.status === 'In Progress').length, fill: 'hsl(var(--chart-4))' },
     { name: 'Done', total: tasks.filter(t => t.status === 'Done').length, fill: 'hsl(var(--chart-1))' },
-    { name: 'Cancelled', total: tasks.filter(t => t.status === 'Cancelled').length, fill: 'hsl(var(--chart-5))' },
   ];
 
   const canPostAnnouncement = ['Co-founder', 'Secretary', 'Chair of Directors'].includes(user.role);
