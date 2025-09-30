@@ -40,7 +40,8 @@ export interface Task {
   description: string;
   status: TaskStatus;
   urgent: boolean;
-  assignedToIds: string[];
+  assignedToIds?: string[];
+  assignedToId?: string; // Can be undefined for unassigned tasks
   assignedById: string;
   createdAt: string;
   dueDate: string;

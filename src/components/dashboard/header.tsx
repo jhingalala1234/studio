@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, Search, Users, CalendarCheck } from 'lucide-react';
+import { Bell, Menu, Search, Users, CalendarCheck, GanttChartSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: null },
   { href: '/dashboard/tasks', label: 'Tasks', icon: null },
+  { href: '/dashboard/gantt', label: 'Gantt', icon: GanttChartSquare },
   { href: '/dashboard/users', label: 'Users', icon: null },
   { href: '/dashboard/my-week', label: 'My Week', icon: CalendarCheck },
   { href: '/dashboard/logs', label: 'Logs', icon: null },
@@ -96,11 +97,11 @@ export function Header({ user }: { user: User }) {
                 href={href}
                 className={cn(
                   'relative rounded-md px-3 py-1 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/10 hover:text-white',
-                  pathname === href && 'text-white'
+                  pathname.startsWith(href) && href !== '/dashboard' || pathname === href ? 'text-white' : ''
                 )}
               >
                 {label}
-                {pathname === href && (
+                {(pathname.startsWith(href) && href !== '/dashboard' || pathname === href) && (
                   <span className="absolute inset-x-1 -bottom-2 h-0.5 rounded-full bg-primary transition-all"></span>
                 )}
               </Link>
