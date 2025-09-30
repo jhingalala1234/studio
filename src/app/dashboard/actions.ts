@@ -7,6 +7,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { FieldValue } from "firebase-admin/firestore";
 import { redirect } from 'next/navigation';
+import type { Team } from "@/types";
 
 async function createNotification(
   userId: string,
@@ -33,6 +34,7 @@ const announcementSchema = z.object({
   isPoll: z.boolean(),
   pollQuestion: z.string().optional(),
   pollOptions: z.array(z.string()).optional(),
+  targetDomains: z.array(z.string()).optional(),
 });
 
 export async function createAnnouncement(data: FormData) {
@@ -53,6 +55,7 @@ export async function createAnnouncement(data: FormData) {
       isPoll: data.get('isPoll') === 'true',
       pollQuestion: data.get('pollQuestion'),
       pollOptions: data.getAll('pollOptions[]').map(opt => opt.toString()).filter(opt => opt),
+      targetDomains: data.getAll('targetDomains[]').map(d => d.toString()),
   }
 
   const validatedFields = announcementSchema.safeParse(rawData);
@@ -62,7 +65,7 @@ export async function createAnnouncement(data: FormData) {
     throw new Error("Invalid announcement data.");
   }
   
-  const { title, content, links, isPoll, pollQuestion, pollOptions } = validatedFields.data;
+  const { title, content, links, isPoll, pollQuestion, pollOptions, targetDomains } = validatedFields.data;
 
   const newAnnouncement: any = {
     title,
@@ -70,6 +73,7 @@ export async function createAnnouncement(data: FormData) {
     authorId: currentUser.id,
     createdAt: new Date().toISOString(),
     links: links || [],
+    targetDomains: targetDomains || [],
   };
 
   if (isPoll && pollQuestion && pollOptions && pollOptions.length > 0) {
@@ -81,12 +85,31 @@ export async function createAnnouncement(data: FormData) {
 
   const docRef = await adminDb.collection("announcements").add(newAnnouncement);
 
-  // Notify all users except the author
+  // Notify users
   const usersSnapshot = await adminDb.collection('users').get();
   const notifMessage = `New announcement posted by <strong>${currentUser.name}</strong>: <strong>${title}</strong>`;
-  const notificationPromises = usersSnapshot.docs
-    .filter(doc => doc.id !== currentUser.id)
-    .map(doc => createNotification(doc.id, currentUser.id, 'ANNOUNCEMENT_NEW', notifMessage, `/dashboard/announcements#${docRef.id}`));
+  
+  let targetUserIds = new Set<string>();
+
+  if (!targetDomains || targetDomains.length === 0) {
+    // Organization-wide
+    usersSnapshot.docs.forEach(doc => targetUserIds.add(doc.id));
+  } else {
+    // Domain-specific
+    usersSnapshot.docs.forEach(doc => {
+        const userTeam = doc.data().team;
+        if (userTeam && targetDomains.includes(userTeam)) {
+            targetUserIds.add(doc.id);
+        }
+    })
+  }
+
+  // Remove the author from the notification list
+  targetUserIds.delete(currentUser.id);
+
+  const notificationPromises = Array.from(targetUserIds).map(userId => 
+    createNotification(userId, currentUser.id, 'ANNOUNCEMENT_NEW', notifMessage, `/dashboard/announcements#${docRef.id}`)
+  );
 
   await Promise.all(notificationPromises);
 

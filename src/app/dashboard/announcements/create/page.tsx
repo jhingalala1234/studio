@@ -34,7 +34,7 @@ export default async function CreateAnnouncementPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <AnnouncementForm />
+                    <AnnouncementForm currentUser={currentUser} />
                 </CardContent>
             </Card>
         </div>

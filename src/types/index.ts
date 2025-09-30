@@ -1,3 +1,4 @@
+
 export type UserRole = 'Co-founder' | 'Secretary' | 'Chair of Directors' | 'Lead' | 'Member';
 
 export type Team = 'Technology' | 'Corporate' | 'Creatives' | 'Presidium';
@@ -108,6 +109,7 @@ export interface Announcement {
     createdAt: string;
     links?: string[];
     poll?: Poll;
+    targetDomains?: Team[];
 }
 
 export interface AnnouncementReaction {

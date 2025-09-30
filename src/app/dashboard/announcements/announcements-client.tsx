@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { User, Announcement, AnnouncementComment, AnnouncementReaction, PollVote } from "@/types";
+import type { User, Announcement, AnnouncementComment, AnnouncementReaction, PollVote, Team } from "@/types";
 import Link from "next/link";
 import {
   Card,
@@ -34,7 +34,16 @@ export default function AnnouncementsClient({
     const canPost = ['Co-founder', 'Secretary', 'Chair of Directors'].includes(currentUser.role);
     const userMap = new Map(users.map(u => [u.id, u]));
 
-    const enrichedAnnouncements = initialAnnouncements.map(announcement => {
+    const visibleAnnouncements = initialAnnouncements.filter(announcement => {
+        // Org-wide announcements are always visible
+        if (!announcement.targetDomains || announcement.targetDomains.length === 0) {
+            return true;
+        }
+        // If targeted, check if the user's team is in the list
+        return currentUser.team && announcement.targetDomains.includes(currentUser.team);
+    });
+
+    const enrichedAnnouncements = visibleAnnouncements.map(announcement => {
         const author = userMap.get(announcement.authorId);
         const comments = initialComments.filter(c => c.announcementId === announcement.id);
         const reactions = initialReactions.filter(r => r.announcementId === announcement.id);

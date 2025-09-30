@@ -12,6 +12,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,6 +22,8 @@ import { useTransition, useState } from 'react';
 import { PlusCircle, Trash } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useRouter } from 'next/navigation';
+import type { User, Team } from '@/types';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 const announcementSchema = z.object({
@@ -30,6 +33,8 @@ const announcementSchema = z.object({
   isPoll: z.boolean().default(false),
   pollQuestion: z.string().optional(),
   pollOptions: z.array(z.object({ text: z.string() })).optional(),
+  postToMyDomain: z.boolean().default(false).optional(),
+  targetDomains: z.array(z.string()).optional(),
 }).refine(data => {
     if (data.isPoll) {
         return !!data.pollQuestion && data.pollQuestion.length > 0;
@@ -51,8 +56,13 @@ const announcementSchema = z.object({
 
 type AnnouncementFormValues = z.infer<typeof announcementSchema>;
 
+interface AnnouncementFormProps {
+    currentUser: User;
+}
 
-export default function AnnouncementForm() {
+const teams: Team[] = ['Technology', 'Corporate', 'Creatives'];
+
+export default function AnnouncementForm({ currentUser }: AnnouncementFormProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
@@ -66,6 +76,8 @@ export default function AnnouncementForm() {
             isPoll: false,
             pollQuestion: '',
             pollOptions: [{ text: '' }, { text: '' }],
+            postToMyDomain: false,
+            targetDomains: [],
         }
     });
 
@@ -78,6 +90,8 @@ export default function AnnouncementForm() {
     });
 
     const isPoll = form.watch('isPoll');
+    const isPresidium = currentUser.role === 'Co-founder' || currentUser.role === 'Secretary';
+    const isDirector = currentUser.role === 'Chair of Directors';
 
   const onSubmit = async (data: AnnouncementFormValues) => {
     startTransition(async () => {
@@ -98,6 +112,12 @@ export default function AnnouncementForm() {
                 }
             } else {
                  formData.append('isPoll', 'false');
+            }
+
+            if (isDirector && data.postToMyDomain && currentUser.team) {
+                formData.append('targetDomains[]', currentUser.team);
+            } else if (isPresidium && data.targetDomains && data.targetDomains.length > 0) {
+                data.targetDomains.forEach(domain => formData.append('targetDomains[]', domain));
             }
             
             await createAnnouncement(formData);
@@ -146,6 +166,80 @@ export default function AnnouncementForm() {
                     </FormItem>
                 )}
             />
+
+            {isDirector && currentUser.team && (
+                 <FormField
+                    control={form.control}
+                    name="postToMyDomain"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5">
+                                <FormLabel>Post only to my team ({currentUser.team})</FormLabel>
+                                <FormDescription>
+                                    If checked, this announcement will only be visible to members of your team.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+            )}
+
+            {isPresidium && (
+                <FormField
+                    control={form.control}
+                    name="targetDomains"
+                    render={() => (
+                        <FormItem className="space-y-4 p-4 border rounded-lg">
+                             <div className="mb-4">
+                                <FormLabel className="text-base">Target Audience</FormLabel>
+                                <FormDescription>
+                                    Select which team(s) should see this announcement. If none are selected, it will be visible to the entire organization.
+                                </FormDescription>
+                            </div>
+                            {teams.map((team) => (
+                                <FormField
+                                key={team}
+                                control={form.control}
+                                name="targetDomains"
+                                render={({ field }) => {
+                                    return (
+                                    <FormItem
+                                        key={team}
+                                        className="flex flex-row items-start space-x-3 space-y-0"
+                                    >
+                                        <FormControl>
+                                        <Checkbox
+                                            checked={field.value?.includes(team)}
+                                            onCheckedChange={(checked) => {
+                                            return checked
+                                                ? field.onChange([...(field.value || []), team])
+                                                : field.onChange(
+                                                    field.value?.filter(
+                                                        (value) => value !== team
+                                                    )
+                                                    )
+                                            }}
+                                        />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                            {team} Team
+                                        </FormLabel>
+                                    </FormItem>
+                                    )
+                                }}
+                                />
+                            ))}
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
 
             <div className="space-y-4">
                 <FormLabel>Reference Links</FormLabel>
