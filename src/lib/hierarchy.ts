@@ -4,7 +4,7 @@
 import type { User } from '@/types';
 
 // Helper function to get all subordinates of a manager (recursively)
-export const getSubordinates = (managerId: string, allUsers: User[]): string[] => {
+export const getSubordinates = async (managerId: string, allUsers: User[]): Promise<string[]> => {
   const manager = allUsers.find(u => u.id === managerId);
   if (!manager) return [];
 
@@ -22,7 +22,7 @@ export const getSubordinates = (managerId: string, allUsers: User[]): string[] =
   const subordinateIds = directSubordinates.map(s => s.id);
 
   // Recursively find subordinates of the direct subordinates (for Chairs overseeing Leads)
-  const nestedSubordinates = subordinateIds.flatMap(id => getSubordinates(id, allUsers));
+  const nestedSubordinates = (await Promise.all(subordinateIds.map(id => getSubordinates(id, allUsers)))).flat();
   
-  return [...subordinateIds, ...nestedSubordinates];
+  return [...new Set([...subordinateIds, ...nestedSubordinates])];
 };
