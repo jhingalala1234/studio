@@ -42,11 +42,11 @@ const getUserTitle = (role: UserRole, team: Team | null): string => {
 const getGreeting = () => {
     const currentHour = new Date().getHours();
     if (currentHour < 12) {
-        return "Good morning";
+        return "Good Morning";
     } else if (currentHour < 17) {
-        return "Good afternoon";
+        return "Good Afternoon";
     } else if (currentHour < 21) {
-        return "Good evening";
+        return "Good Evening";
     } else {
         return "Burning the midnight oil";
     }
