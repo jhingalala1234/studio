@@ -21,6 +21,7 @@ import { Logo } from '@/components/logo';
 import type { User, UserRole, Team } from '@/types';
 import { cn } from '@/lib/utils';
 import { NotificationPopover } from './notification-popover';
+import { useState, useEffect } from 'react';
 
 
 const navItems = [
@@ -45,24 +46,21 @@ export function Header({ user }: { user: User }) {
   const userInitials = user.name.split(' ').map((n) => n[0]).join('');
   const pathname = usePathname();
   const userTitle = getUserTitle(user.role, user.team);
-  
-  const currentHour = new Date().getHours();
-  let greeting: string;
-  let punctuation: string;
+  const [greeting, setGreeting] = useState<{ text: string; punctuation: string }>({ text: 'Welcome Back', punctuation: '!' });
 
-  if (currentHour < 12) {
-    greeting = "Good Morning";
-    punctuation = "!";
-  } else if (currentHour < 17) {
-    greeting = "Good Afternoon";
-    punctuation = "!";
-  } else if (currentHour < 21) {
-    greeting = "Good Evening";
-    punctuation = "!";
-  } else {
-    greeting = "Burning the midnight oil";
-    punctuation = "?";
-  }
+  useEffect(() => {
+    const currentHour = new Date().getHours();
+    if (currentHour < 12) {
+      setGreeting({ text: 'Good Morning', punctuation: '!' });
+    } else if (currentHour < 17) {
+      setGreeting({ text: 'Good Afternoon', punctuation: '!' });
+    } else if (currentHour < 21) {
+      setGreeting({ text: 'Good Evening', punctuation: '!' });
+    } else {
+      setGreeting({ text: 'Burning the midnight oil', punctuation: '?' });
+    }
+  }, []);
+  
 
   return (
     <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-black/50 backdrop-blur-lg">
@@ -136,7 +134,7 @@ export function Header({ user }: { user: User }) {
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
               <h1 className="font-headline text-2xl font-bold md:text-3xl text-white">
-                {greeting}, {user?.name.split(' ')[0]}{punctuation}
+                {greeting.text}, {user?.name.split(' ')[0]}{greeting.punctuation}
               </h1>
               <p className="text-md text-muted-foreground">You are the {userTitle} at CloudX.</p>
           </div>
