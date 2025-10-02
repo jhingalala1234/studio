@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/actions';
 import { Logo } from '@/components/logo';
@@ -69,7 +69,7 @@ export function Header({ user }: { user: User }) {
       
       <div className="w-full border-b border-white/10 px-4 md:px-6">
         <div className="relative flex h-16 items-center justify-center">
-            <div className="md:hidden absolute left-0">
+            <div className="absolute left-0 md:hidden">
             <Sheet>
                 <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="shrink-0">
@@ -78,28 +78,34 @@ export function Header({ user }: { user: User }) {
                 </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="bg-background/95">
-                <nav className="grid gap-6 text-lg font-medium">
-                    <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 text-lg font-semibold"
-                    >
-                    <Logo />
-                    </Link>
-                    {visibleNavItems.map(({ href, label }) => (
-                    <Link
-                        key={href}
-                        href={href}
-                        className={cn(
-                        'transition-colors hover:text-foreground',
-                        pathname === href
-                            ? 'text-foreground'
-                            : 'text-muted-foreground'
-                        )}
-                    >
-                        {label}
-                    </Link>
-                    ))}
-                </nav>
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Mobile Navigation Menu</SheetTitle>
+                    <SheetDescription>
+                      A list of links to navigate to different sections of the application.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <nav className="grid gap-6 text-lg font-medium">
+                      <Link
+                      href="/dashboard"
+                      className="flex items-center gap-2 text-lg font-semibold"
+                      >
+                      <Logo />
+                      </Link>
+                      {visibleNavItems.map(({ href, label }) => (
+                      <Link
+                          key={href}
+                          href={href}
+                          className={cn(
+                          'transition-colors hover:text-foreground',
+                          pathname === href
+                              ? 'text-foreground'
+                              : 'text-muted-foreground'
+                          )}
+                      >
+                          {label}
+                      </Link>
+                      ))}
+                  </nav>
                 </SheetContent>
             </Sheet>
             </div>
@@ -112,7 +118,7 @@ export function Header({ user }: { user: User }) {
         </div>
       </div>
       
-      <nav className="hidden w-full items-center justify-center border-b border-white/10 px-4 py-2 md:flex md:px-6">
+      <nav className="hidden w-full items-center justify-center border-b border-white/10 px-4 py-2 md:flex">
           <div className="flex items-center justify-center gap-6">
             {visibleNavItems.map(({ href, label }) => (
               <Link
@@ -159,7 +165,7 @@ export function Header({ user }: { user: User }) {
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback>{userInitials}</AvatarFallback>
-                  </Avatar>
+-                  </Avatar>
                   <span className="sr-only">Toggle user menu</span>
                 </Button>
               </DropdownMenuTrigger>
