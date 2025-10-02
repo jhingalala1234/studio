@@ -78,7 +78,7 @@ export function NotificationPopover({ user }: { user: User }) {
                 <div className="p-4">
                     <h4 className="text-sm font-medium leading-none">Notifications</h4>
                 </div>
-                <ScrollArea className="h-[70vh]">
+                <ScrollArea className="max-h-[24rem]">
                     {isLoading ? (
                         <div className="p-4 space-y-4">
                             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -103,7 +103,7 @@ export function NotificationPopover({ user }: { user: User }) {
                         ))}
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center h-full p-4">
+                        <div className="flex items-center justify-center h-24">
                             <p className="text-sm text-muted-foreground">No new notifications.</p>
                         </div>
                     )}
