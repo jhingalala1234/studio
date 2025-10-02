@@ -19,9 +19,7 @@ const TeamSection = ({ title, users }: { title: string; users: User[] }) => {
     <div>
       <h2 className="mb-4 font-headline text-2xl font-bold">{title}</h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {users
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map(user => (
+        {users.map(user => (
             <UserCard key={user.id} user={user} />
           ))}
       </div>
@@ -43,10 +41,33 @@ export default function UsersClient({ users }: { users: User[] }) {
     );
   }, [searchQuery, users]);
 
-  const presidium = filteredUsers.filter(u => u.role === 'Co-founder' || u.role === 'Secretary');
-  const directors = filteredUsers.filter(u => u.role === 'Chair of Directors');
-  const leads = filteredUsers.filter(u => u.role === 'Lead');
-  const members = filteredUsers.filter(u => u.role === 'Member');
+  // Define custom sort orders
+  const presidiumOrder = ['Tanish Poddar', 'Sarthak Lal', 'Asmi Sharma'];
+  const directorOrder = ['Sukhad Kaur', 'Kavya Singh', 'Saksham Gupta'];
+  const leadTeamOrder = ['Technology', 'Corporate', 'Creatives'];
+
+  const presidium = filteredUsers
+    .filter(u => u.role === 'Co-founder' || u.role === 'Secretary')
+    .sort((a, b) => presidiumOrder.indexOf(a.name) - presidiumOrder.indexOf(b.name));
+
+  const directors = filteredUsers
+    .filter(u => u.role === 'Chair of Directors')
+    .sort((a, b) => directorOrder.indexOf(a.name) - directorOrder.indexOf(b.name));
+    
+  const leads = filteredUsers
+    .filter(u => u.role === 'Lead')
+    .sort((a, b) => {
+        const teamAIndex = leadTeamOrder.indexOf(a.team as Team);
+        const teamBIndex = leadTeamOrder.indexOf(b.team as Team);
+
+        if (teamAIndex !== teamBIndex) {
+            return teamAIndex - teamBIndex;
+        }
+
+        return a.name.localeCompare(b.name);
+    });
+
+  const members = filteredUsers.filter(u => u.role === 'Member').sort((a, b) => a.name.localeCompare(b.name));
 
   const technologyMembers = members.filter(u => u.team === 'Technology');
   const corporateMembers = members.filter(u => u.team === 'Corporate');
