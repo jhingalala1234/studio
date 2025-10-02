@@ -43,11 +43,15 @@ import MarkAsDoneButton from '../mark-as-done-button';
 import { Button } from '@/components/ui/button';
 import SummarizeTaskDialog from './summarize-task-dialog';
 
+interface TaskDetailsPageProps {
+  params: {
+    id: string;
+  };
+}
+
 export default async function TaskDetailsPage({
   params,
-}: {
-  params: { id: string };
-}) {
+}: TaskDetailsPageProps) {
   const task = await getTaskById(params.id);
   const users = await getAllUsers();
   const currentUser = await getCurrentUser();

@@ -49,8 +49,13 @@ const InfoRow = ({ icon, label, value, isLink = false, href }: { icon: React.Rea
     );
 };
 
+interface UserProfilePageProps {
+  params: {
+    id: string;
+  };
+}
 
-export default async function UserProfilePage({ params }: { params: { id: string } }) {
+export default async function UserProfilePage({ params }: UserProfilePageProps) {
   const user = await getUserById(params.id);
   
   if (!user) {
