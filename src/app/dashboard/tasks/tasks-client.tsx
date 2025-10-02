@@ -6,6 +6,7 @@ import {
   Flame,
   Users,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -37,6 +38,7 @@ import MarkAsDoneButton from './mark-as-done-button';
 import { getSubordinates } from '@/lib/hierarchy';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import DeleteTaskButton from './delete-task-button';
 
 
 export default function TasksClient({ currentUser, users, allTasks: initialTasks }: { currentUser: User, users: User[], allTasks: Task[] }) {
@@ -122,12 +124,13 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                 <TableHead>Assignees</TableHead>
                 <TableHead>Assigner</TableHead>
                 <TableHead className="hidden md:table-cell">Due Date</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
             </TableRow>
             </TableHeader>
             <TableBody>
             {tasks.map(task => {
                 const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'Done' && task.status !== 'Cancelled';
+                const canDelete = currentUser.id === task.assignerId || currentUser.role === 'Co-founder' || currentUser.role === 'Secretary';
                 return (
                     <TableRow key={task.id} className={cn(isOverdue && 'bg-destructive/20 hover:bg-destructive/30')}>
                         <TableCell className="font-medium">
@@ -222,10 +225,15 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                             )}
                             </div>
                         </TableCell>
-                        <TableCell>
-                            {(task.status === 'To Do' || task.status === 'In Progress') && task.assignees.some(a => a.id === currentUser.id) && (
-                            <MarkAsDoneButton taskId={task.id} variant="outline" />
-                            )}
+                        <TableCell className="text-right">
+                           <div className="flex items-center justify-end gap-2">
+                             {(task.status === 'To Do' || task.status === 'In Progress') && task.assignees.some(a => a.id === currentUser.id) && (
+                                <MarkAsDoneButton taskId={task.id} variant="outline" />
+                             )}
+                             {canDelete && (
+                                <DeleteTaskButton taskId={task.id} asIcon />
+                             )}
+                           </div>
                         </TableCell>
                     </TableRow>
                 )

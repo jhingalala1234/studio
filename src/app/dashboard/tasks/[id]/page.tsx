@@ -68,7 +68,7 @@ export default async function TaskDetailsPage({
   const isAssignee = assignedToIds.includes(currentUser.id);
   const isPresidium = currentUser.role === 'Co-founder' || currentUser.role === 'Secretary';
   const canEdit = isPresidium || isAssigner;
-  const canDelete = isAssigner;
+  const canDelete = isAssigner || isPresidium;
 
   const statusBadgeVariant = {
     'To Do': 'outline',

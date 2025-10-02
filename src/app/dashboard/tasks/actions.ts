@@ -1,10 +1,4 @@
 
-
-
-
-
-
-
 "use server";
 
 import { z } from "zod";
@@ -14,7 +8,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { differenceInHours } from 'date-fns';
 import type { TaskStatus, Subtask } from "@/types";
-import {FieldValue, FieldPath} from 'firebase-admin/firestore';
+import {FieldPath} from 'firebase-admin/firestore';
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -169,7 +163,7 @@ export async function addTask(data: FormData) {
       description: description || '',
       assignedToIds,
       dueDate: dueDate.toISOString(),
-      status: "To Do",
+      status: "To Do" as TaskStatus,
       assignedById: currentUser.id,
       createdAt: new Date().toISOString(),
       links: links || [],
@@ -331,7 +325,15 @@ export async function deleteTask(taskId: string) {
         await taskRef.delete();
         console.log(`Successfully deleted task with ID: ${taskId}`);
 
-        const collectionsToDelete = ['logs', 'comments', 'subtasks', 'notifications'];
+        const logMessage = `${currentUser.name} deleted the task "${task?.title}".`;
+        await adminDb.collection('logs').add({
+          message: logMessage,
+          timestamp: new Date().toISOString(),
+          userId: currentUser.id,
+          // TaskId is not added here as the task is deleted
+        });
+
+        const collectionsToDelete = ['comments', 'subtasks', 'notifications'];
         for (const collection of collectionsToDelete) {
             const snapshot = await adminDb.collection(collection).where("taskId", "==", taskId).get();
             if (!snapshot.empty) {
@@ -357,7 +359,7 @@ export async function deleteTask(taskId: string) {
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/my-week");
     revalidatePath("/dashboard/tasks/board");
-    redirect('/dashboard/tasks');
+    // No redirect here, UI should handle removal from list.
 }
 
 const updateStatusSchema = z.object({
@@ -630,11 +632,3 @@ export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[])
     await batch.commit();
     revalidatePath(`/dashboard/tasks/${taskId}`);
 }
-
-
-    
-
-    
-
-
-

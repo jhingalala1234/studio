@@ -13,15 +13,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash } from "lucide-react";
+import { Trash, Trash2 } from "lucide-react";
 import { deleteTask } from "./actions";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DeleteTaskButtonProps {
   taskId: string;
+  asIcon?: boolean;
 }
 
-export default function DeleteTaskButton({ taskId }: DeleteTaskButtonProps) {
+export default function DeleteTaskButton({ taskId, asIcon = false }: DeleteTaskButtonProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -50,25 +52,42 @@ export default function DeleteTaskButton({ taskId }: DeleteTaskButtonProps) {
     });
   };
 
+  const triggerButton = asIcon ? (
+     <TooltipProvider>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Delete Task</p>
+            </TooltipContent>
+        </Tooltip>
+    </TooltipProvider>
+  ) : (
+    <Button variant="destructive" size="sm">
+        <Trash className="mr-2 h-4 w-4" />
+        Delete Task
+    </Button>
+  );
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm">
-          <Trash className="mr-2 h-4 w-4" />
-          Delete Task
-        </Button>
+        {triggerButton}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete the task
-            and all associated logs.
+            and all associated logs, comments, and subtasks.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isPending}>
+          <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive/90">
             {isPending ? "Deleting..." : "Continue"}
           </AlertDialogAction>
         </AlertDialogFooter>
