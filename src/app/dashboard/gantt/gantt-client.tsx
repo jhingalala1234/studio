@@ -14,7 +14,6 @@ export default function GanttChartClient({ tasks }: { tasks: Task[] }) {
       id: task.id,
       type: "task",
       progress: task.status === 'Done' ? 100 : task.status === 'In Progress' ? 50 : 0,
-      isDisabled: true,
       styles: { progressColor: '#2E2BF5', progressSelectedColor: '#FB1587' }
     }));
   }, [tasks]);
