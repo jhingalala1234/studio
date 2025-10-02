@@ -47,6 +47,7 @@ export function Header({ user }: { user: User }) {
   const pathname = usePathname();
   const userTitle = getUserTitle(user.role, user.team);
   const [greeting, setGreeting] = useState<{ text: string; punctuation: string }>({ text: 'Welcome Back', punctuation: '!' });
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const visibleNavItems = navItems.filter(item => item.roles.includes(user.role));
 
@@ -70,7 +71,7 @@ export function Header({ user }: { user: User }) {
       <div className="w-full border-b border-white/10 px-4 md:px-6">
         <div className="relative flex h-16 items-center justify-center">
             <div className="absolute left-0 md:hidden">
-            <Sheet>
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="shrink-0">
                     <Menu className="h-5 w-5" />
@@ -88,6 +89,7 @@ export function Header({ user }: { user: User }) {
                       <Link
                       href="/dashboard"
                       className="flex items-center gap-2 text-lg font-semibold"
+                      onClick={() => setIsSheetOpen(false)}
                       >
                       <Logo />
                       </Link>
@@ -101,6 +103,7 @@ export function Header({ user }: { user: User }) {
                               ? 'text-foreground'
                               : 'text-muted-foreground'
                           )}
+                          onClick={() => setIsSheetOpen(false)}
                       >
                           {label}
                       </Link>
