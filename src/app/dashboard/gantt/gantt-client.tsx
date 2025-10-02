@@ -1,11 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { Task } from "@/types";
 import { Gantt, ViewMode } from "gantt-task-react";
 import "gantt-task-react/dist/index.css";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function GanttChartClient({ tasks }: { tasks: Task[] }) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const ganttData = useMemo(() => {
     return tasks.map((task) => ({
       start: new Date(task.createdAt),
@@ -26,6 +33,10 @@ export default function GanttChartClient({ tasks }: { tasks: Task[] }) {
     );
   }
   
+  if (!isClient) {
+    return <Skeleton className="h-[500px] w-full" />;
+  }
+
   return (
     <div className="gantt-chart-container p-4 glass rounded-lg w-full">
         <Gantt
