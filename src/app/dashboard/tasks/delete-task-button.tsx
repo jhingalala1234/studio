@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -20,16 +19,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface DeleteTaskButtonProps {
   taskId: string;
   asIcon?: boolean;
-  onDeleted: () => void;
-  isDeleting: boolean;
 }
 
-export default function DeleteTaskButton({ taskId, asIcon = false, onDeleted, isDeleting }: DeleteTaskButtonProps) {
+export default function DeleteTaskButton({ taskId, asIcon = false }: DeleteTaskButtonProps) {
+
   const triggerButton = asIcon ? (
      <TooltipProvider>
         <Tooltip>
             <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={isDeleting}>
+                <Button variant="ghost" size="icon" type="button">
                     <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
             </TooltipTrigger>
@@ -39,9 +37,9 @@ export default function DeleteTaskButton({ taskId, asIcon = false, onDeleted, is
         </Tooltip>
     </TooltipProvider>
   ) : (
-    <Button variant="destructive" size="sm" disabled={isDeleting}>
+    <Button variant="destructive" size="sm" type="button">
         <Trash className="mr-2 h-4 w-4" />
-        {isDeleting ? "Deleting..." : "Delete Task"}
+        Delete Task
     </Button>
   );
 
@@ -59,9 +57,9 @@ export default function DeleteTaskButton({ taskId, asIcon = false, onDeleted, is
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onDeleted} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-            {isDeleting ? "Deleting..." : "Continue"}
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <Button type="submit" className="bg-destructive hover:bg-destructive/90">Continue</Button>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

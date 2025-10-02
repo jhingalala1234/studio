@@ -41,12 +41,14 @@ import { cn } from '@/lib/utils';
 import DeleteTaskButton from './delete-task-button';
 import { deleteTask } from './actions';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 
 export default function TasksClient({ currentUser, users, allTasks: initialTasks }: { currentUser: User, users: User[], allTasks: Task[] }) {
   const [visibleTasks, setVisibleTasks] = useState<Task[] | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
   const { toast } = useToast();
+  const router = useRouter();
   
   useEffect(() => {
     async function filterTasks() {
@@ -80,10 +82,6 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
   }, [currentUser, users, initialTasks]);
 
   const handleDelete = (taskId: string) => {
-    const originalTasks = visibleTasks;
-    // Optimistic update
-    setVisibleTasks(currentTasks => currentTasks ? currentTasks.filter(t => t.id !== taskId) : null);
-
     startDeleteTransition(async () => {
       try {
         await deleteTask(taskId);
@@ -91,9 +89,10 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
           title: "Task Deleted",
           description: "The task has been successfully removed.",
         });
+        // We need to re-fetch or re-filter the tasks after deletion.
+        // For now, let's just refresh the page. A more advanced solution would be better.
+        router.refresh();
       } catch (error) {
-        // Revert on error
-        setVisibleTasks(originalTasks);
         toast({
           variant: "destructive",
           title: "Error deleting task",
@@ -260,7 +259,9 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                                 <MarkAsDoneButton taskId={task.id} variant="outline" />
                              )}
                              {canDelete && (
-                                <DeleteTaskButton taskId={task.id} asIcon onDeleted={() => handleDelete(task.id)} isDeleting={isDeleting} />
+                                <form action={() => handleDelete(task.id)}>
+                                    <DeleteTaskButton taskId={task.id} asIcon />
+                                </form>
                              )}
                            </div>
                         </TableCell>

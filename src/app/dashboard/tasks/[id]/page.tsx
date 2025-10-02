@@ -1,5 +1,5 @@
 
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import {
   getTaskById,
   getAllUsers,
@@ -24,6 +24,7 @@ import {
   MessageSquare,
   CheckSquare,
   Pencil,
+  Trash2,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -42,6 +43,7 @@ import SubtasksManager from './subtasks-manager';
 import MarkAsDoneButton from '../mark-as-done-button';
 import { Button } from '@/components/ui/button';
 import SummarizeTaskDialog from './summarize-task-dialog';
+import { deleteTask } from '../actions';
 
 interface TaskDetailsPageProps {
   params: {
@@ -90,6 +92,12 @@ export default async function TaskDetailsPage({
       userAvatar: user?.avatar,
     };
   });
+  
+  const handleDeleteTask = async () => {
+    'use server';
+    await deleteTask(task.id);
+    redirect('/dashboard/tasks');
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -125,7 +133,11 @@ export default async function TaskDetailsPage({
                 </Link>
               </Button>
             )}
-            {canDelete && <DeleteTaskButton taskId={task.id} />}
+            {canDelete && 
+               <form action={handleDeleteTask}>
+                <DeleteTaskButton taskId={task.id} asIcon={false} />
+               </form>
+            }
           </div>
         </div>
         <p className="text-muted-foreground">
