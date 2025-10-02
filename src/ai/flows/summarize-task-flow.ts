@@ -26,24 +26,13 @@ export async function summarizeTask(input: SummarizeTaskInput): Promise<Summariz
 
 const prompt = ai.definePrompt({
   name: 'summarizeTaskPrompt',
-  input: { schema: z.object({
-    taskTitle: z.string(),
-    taskDescription: z.string(),
-    taskStatus: z.string(),
-    history: z.string(),
-  }) },
+  input: { schema: z.string() },
   output: { schema: SummarizeTaskOutputSchema },
   prompt: `You are an expert project manager. Your goal is to provide a clear and concise summary of a task's history for someone who is new to the task.
 
 Analyze the following task information and its history, which includes comments and activity logs.
 
-**Task Details:**
-- Title: {{{taskTitle}}}
-- Description: {{{taskDescription}}}
-- Current Status: {{{taskStatus}}}
-
-**Task History (Comments and Logs):**
-{{{history}}}
+{{{input}}}
 
 Based on all the provided information, please generate the following:
 1.  **Summary:** A brief overview of what the task is about, its progress, and its current state.
@@ -80,13 +69,18 @@ const summarizeTaskFlow = ai.defineFlow(
     const history = [...formattedComments, ...formattedLogs]
       .sort((a, b) => new Date(a.substring(1, 17)).getTime() - new Date(b.substring(1, 17)).getTime())
       .join('\n');
+      
+    const fullPrompt = `
+**Task Details:**
+- Title: ${task.title}
+- Description: ${task.description}
+- Current Status: ${task.status}
 
-    const { output } = await prompt({
-      taskTitle: task.title,
-      taskDescription: task.description,
-      taskStatus: task.status,
-      history: history || 'No comments or logs for this task yet.',
-    });
+**Task History (Comments and Logs):**
+${history || 'No comments or logs for this task yet.'}
+`;
+
+    const { output } = await prompt(fullPrompt);
 
     return output!;
   }
