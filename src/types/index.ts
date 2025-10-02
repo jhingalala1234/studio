@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'Co-founder' | 'Secretary' | 'Chair of Directors' | 'Lead' | 'Member';
 
 export type Team = 'Technology' | 'Corporate' | 'Creatives' | 'Presidium';
@@ -83,6 +84,7 @@ export interface Notification {
     link: string; // Link to the relevant page (e.g., task details)
     isRead: boolean;
     createdAt: string;
+    taskId?: string;
 }
 
 export interface PollOption {
@@ -126,3 +128,6 @@ export interface AnnouncementComment {
     message: string;
     createdAt: string;
 }
+
+
+    

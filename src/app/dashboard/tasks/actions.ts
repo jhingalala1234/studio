@@ -1,3 +1,4 @@
+
 "use server";
 
 import { z } from "zod";
@@ -20,9 +21,10 @@ const taskSchema = z.object({
 async function createNotification(
   userId: string,
   actorId: string,
-  type: 'TASK_ASSIGNED' | 'STATUS_UPDATED' | 'COMMENT_ADDED' | 'DEADLINE_APPROACHING',
+  type: 'TASK_ASSIGNED' | 'STATUS_UPDATED' | 'COMMENT_ADDED' | 'DEADLINE_APPROACHING' | 'ANNOUNCEMENT_NEW',
   message: string,
-  link: string
+  link: string,
+  taskId?: string
 ) {
     await adminDb.collection('notifications').add({
         userId,
@@ -32,6 +34,7 @@ async function createNotification(
         link,
         isRead: false,
         createdAt: new Date().toISOString(),
+        ...(taskId && { taskId })
     });
 }
 
@@ -89,7 +92,8 @@ export async function addTask(data: FormData) {
             currentUser.id,
             'TASK_ASSIGNED',
             notifMessage,
-            `/dashboard/tasks/${docRef.id}`
+            `/dashboard/tasks/${docRef.id}`,
+            docRef.id
             );
         }
     }
@@ -314,7 +318,8 @@ export async function updateTaskStatus(formData: FormData) {
                 currentUser.id,
                 'STATUS_UPDATED',
                 notifMessage,
-                `/dashboard/tasks/${taskId}`
+                `/dashboard/tasks/${taskId}`,
+                taskId
             );
         }
 
@@ -451,7 +456,8 @@ export async function addComment(formData: FormData) {
             currentUser.id,
             'COMMENT_ADDED',
             notifMessage,
-            `/dashboard/tasks/${taskId}`
+            `/dashboard/tasks/${taskId}`,
+            taskId
         );
     }
 
@@ -516,3 +522,6 @@ export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[])
     await batch.commit();
     revalidatePath(`/dashboard/tasks/${taskId}`);
 }
+
+
+    
