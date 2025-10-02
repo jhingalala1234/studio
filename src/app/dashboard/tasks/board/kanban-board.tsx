@@ -55,18 +55,18 @@ export default function KanbanBoard({
       if (role === 'Co-founder' || role === 'Secretary') {
         visibleTasks = initialTasks;
       } else if (role === 'Member') {
-        visibleTasks = initialTasks.filter(task => task.assignedToIds.includes(id));
+        visibleTasks = initialTasks.filter(task => task.assignedToIds?.includes(id));
       } else if (role === 'Chair of Directors' || role === 'Lead') {
         const subordinateIds = await getSubordinates(id, users);
         const teamMemberIds = new Set([id, ...subordinateIds]);
         visibleTasks = initialTasks.filter(task => 
-          task.assignedToIds.some(assigneeId => teamMemberIds.has(assigneeId)) || task.assignedById === id
+            task.assignedToIds?.some(assigneeId => teamMemberIds.has(assigneeId)) || task.assignedById === id
         );
       }
       
       const enrichedTasks = visibleTasks.map(task => {
           const assignees = users
-              .filter(u => task.assignedToIds.includes(u.id))
+              .filter(u => task.assignedToIds?.includes(u.id))
               .map(u => ({ name: u.name, avatar: u.avatar }));
           
           return {
@@ -124,7 +124,7 @@ export default function KanbanBoard({
     const endColumn = boardState.columns[destination.droppableId as TaskStatus];
     const task = boardState.tasks[draggableId];
 
-    if (!task.assignedToIds.includes(currentUser.id)) {
+    if (!task.assignedToIds?.includes(currentUser.id)) {
         toast({
             variant: "destructive",
             title: "Permission Denied",

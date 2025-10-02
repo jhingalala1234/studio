@@ -1,4 +1,3 @@
-
 "use server";
 
 import { z } from "zod";
@@ -8,8 +7,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { differenceInHours } from 'date-fns';
 import type { TaskStatus, Subtask } from "@/types";
-import {FieldPath} from 'firebase-admin/firestore';
-
+import { FieldPath, FieldValue } from 'firebase-admin/firestore';
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
@@ -78,7 +76,6 @@ export async function addBulkIndividualTasks(data: FormData) {
       // No single taskId for bulk operation log
   });
 
-
   for (const assigneeId of assignedToIds) {
       const taskRef = tasksCollection.doc();
       const newTask = {
@@ -115,9 +112,9 @@ export async function addBulkIndividualTasks(data: FormData) {
       await batch.commit();
   } catch (error) {
        console.error("Failed to create bulk tasks:", error);
-      if (error instanceof Error) {
-          throw new Error(error.message);
-      }
+       if (error instanceof Error) {
+           throw new Error(error.message);
+       }
   }
 
   revalidatePath("/dashboard/tasks");
@@ -126,7 +123,6 @@ export async function addBulkIndividualTasks(data: FormData) {
   revalidatePath("/dashboard/tasks/board");
   redirect('/dashboard/tasks');
 }
-
 
 export async function addTask(data: FormData) {
   const currentUser = await getCurrentUser();
@@ -202,7 +198,6 @@ export async function addTask(data: FormData) {
         });
     }
 
-
   } catch (error) {
     console.error("Failed to create task:", error);
     if (error instanceof Error && !error.message.includes('NEXT_REDIRECT')) {
@@ -210,14 +205,12 @@ export async function addTask(data: FormData) {
     }
   }
 
-
   revalidatePath("/dashboard/tasks");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/my-week");
   revalidatePath("/dashboard/tasks/board");
   redirect('/dashboard/tasks');
 }
-
 
 export async function updateTask(taskId: string, data: FormData) {
   const currentUser = await getCurrentUser();
@@ -279,14 +272,12 @@ export async function updateTask(taskId: string, data: FormData) {
       taskId: taskId,
     });
 
-
   } catch (error) {
     console.error("Failed to update task:", error);
     if (error instanceof Error && !error.message.includes('NEXT_REDIRECT')) {
         throw new Error(error.message);
     }
   }
-
 
   revalidatePath("/dashboard/tasks");
   revalidatePath(`/dashboard/tasks/${taskId}`);
@@ -296,8 +287,6 @@ export async function updateTask(taskId: string, data: FormData) {
   revalidatePath("/dashboard/tasks/board");
   redirect(`/dashboard/tasks/${taskId}`);
 }
-
-
 
 export async function deleteTask(taskId: string) {
     const currentUser = await getCurrentUser();
@@ -327,10 +316,10 @@ export async function deleteTask(taskId: string) {
 
         const logMessage = `${currentUser.name} deleted the task "${task?.title}".`;
         await adminDb.collection('logs').add({
-          message: logMessage,
-          timestamp: new Date().toISOString(),
-          userId: currentUser.id,
-          // TaskId is not added here as the task is deleted
+            message: logMessage,
+            timestamp: new Date().toISOString(),
+            userId: currentUser.id,
+            // TaskId is not added here as the task is deleted
         });
 
         const collectionsToDelete = ['comments', 'subtasks', 'notifications'];
@@ -541,8 +530,7 @@ export async function addComment(formData: FormData) {
         taskId,
         userId: currentUser.id,
         message: comment,
-        createdAt: new
- Date().toISOString(),
+        createdAt: new Date().toISOString(),
     };
 
     await adminDb.collection('comments').add(commentData);

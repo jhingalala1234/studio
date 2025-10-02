@@ -1,38 +1,41 @@
-
-import { getTaskById, getAllUsers, } from "@/lib/data";
+import { getTaskById, getAllUsers } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import TaskForm from "../../task-form";
 
-interface EditTaskPageProps {
-    params: { id: string };
+interface PageProps {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function EditTaskPage({ params }: EditTaskPageProps) {
-    const [task, users, currentUser] = await Promise.all([
-        getTaskById(params.id),
-        getAllUsers(),
-        getCurrentUser(),
-    ]);
+export default async function EditTaskPage({ params, searchParams }: PageProps) {
+  const resolvedParams = await params;
+  // If you need searchParams, you can await them similarly:
+  // const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
-    if (!task || !currentUser) {
-        notFound();
-    }
+  const [task, users, currentUser] = await Promise.all([
+    getTaskById(resolvedParams.id),
+    getAllUsers(),
+    getCurrentUser(),
+  ]);
 
-    const isAssigner = currentUser.id === task.assignedById;
-    const isPresidium = currentUser.role === 'Co-founder' || currentUser.role === 'Secretary';
+  if (!task || !currentUser) {
+    notFound();
+  }
 
-    if (!isAssigner && !isPresidium) {
-        // Redirect or show an error message if the user doesn't have permission
-        redirect('/dashboard/tasks');
-    }
+  const isAssigner = currentUser.id === task.assignedById;
+  const isPresidium = currentUser.role === "Co-founder" || currentUser.role === "Secretary";
 
-    return (
-        <TaskForm 
-            formType="edit"
-            task={task}
-            allUsers={users}
-            currentUser={currentUser}
-        />
-    );
+  if (!isAssigner && !isPresidium) {
+    redirect("/dashboard/tasks");
+  }
+
+  return (
+    <TaskForm
+      formType="edit"
+      task={task}
+      allUsers={users}
+      currentUser={currentUser}
+    />
+  );
 }
