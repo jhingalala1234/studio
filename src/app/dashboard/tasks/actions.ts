@@ -3,6 +3,7 @@
 
 
 
+
 "use server";
 
 import { z } from "zod";
@@ -119,7 +120,7 @@ export async function addBulkIndividualTasks(data: FormData) {
       await batch.commit();
   } catch (error) {
        console.error("Failed to create bulk tasks:", error);
-      if (error instanceof Error && !error.message.includes('NEXT_REDIRECT')) {
+      if (error instanceof Error) {
           throw new Error(error.message);
       }
   }
@@ -633,4 +634,5 @@ export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[])
     
 
     
+
 
