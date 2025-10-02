@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase-admin';
 import { getCurrentUser } from '@/lib/auth';
 import type { User } from '@/types';
-import { seedUsers as seedUserData } from '@/lib/seed-data';
+import { users as seedUserData } from '@/lib/seed-data';
 
 const userSchema = z.object({
   id: z.string(),
