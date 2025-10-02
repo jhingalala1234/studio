@@ -4,7 +4,11 @@ import { getCurrentUser } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import TaskForm from "../../task-form";
 
-export default async function EditTaskPage({ params }: { params: { id: string } }) {
+interface EditTaskPageProps {
+    params: { id: string };
+}
+
+export default async function EditTaskPage({ params }: EditTaskPageProps) {
     const [task, users, currentUser] = await Promise.all([
         getTaskById(params.id),
         getAllUsers(),
