@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -41,6 +42,7 @@ const subTeams: (SubTeam | null)[] = [
     'events', 'ops', 'pr', 'sponsorship', 
     'digital-design', 'media', null
 ];
+const NONE_VALUE = "__NONE__";
 
 export default function AdminClient({ users: initialUsers }: { users: User[] }) {
   const [users, setUsers] = useState<User[]>(initialUsers);
@@ -50,7 +52,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
   const handleInputChange = (userId: string, field: keyof User, value: string | null) => {
     setUsers(prevUsers =>
       prevUsers.map(user =>
-        user.id === userId ? { ...user, [field]: value } : user
+        user.id === userId ? { ...user, [field]: value === NONE_VALUE ? null : value } : user
       )
     );
   };
@@ -170,15 +172,15 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                 </TableCell>
                 <TableCell>
                   <Select
-                    value={user.team || ''}
-                    onValueChange={(value: Team | '') => handleInputChange(user.id, 'team', value || null)}
+                    value={user.team || NONE_VALUE}
+                    onValueChange={(value: string) => handleInputChange(user.id, 'team', value)}
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Select team" />
                     </SelectTrigger>
                     <SelectContent>
                       {teams.map(team => (
-                        <SelectItem key={team || 'null'} value={team || ''}>
+                        <SelectItem key={team || 'null'} value={team || NONE_VALUE}>
                           {team || 'None'}
                         </SelectItem>
                       ))}
@@ -187,15 +189,15 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                 </TableCell>
                  <TableCell>
                   <Select
-                    value={user.subTeam || ''}
-                    onValueChange={(value: SubTeam | '') => handleInputChange(user.id, 'subTeam', value || null)}
+                    value={user.subTeam || NONE_VALUE}
+                    onValueChange={(value: string) => handleInputChange(user.id, 'subTeam', value)}
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Select sub-team" />
                     </SelectTrigger>
                     <SelectContent>
                       {subTeams.map(subTeam => (
-                        <SelectItem key={subTeam || 'null'} value={subTeam || ''}>
+                        <SelectItem key={subTeam || 'null'} value={subTeam || NONE_VALUE}>
                           {subTeam || 'None'}
                         </SelectItem>
                       ))}
