@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
@@ -30,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { format, parseISO, setHours, setMinutes } from "date-fns";
 import type { User, Team, UserRole, Task } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { addTask, updateTask } from "./actions";
+import { addTask, updateTask, addBulkIndividualTasks } from "./actions";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
@@ -59,7 +60,7 @@ const taskSchema = z.object({
 type TaskFormValues = z.infer<typeof taskSchema>;
 
 interface TaskFormProps {
-    formType: 'create' | 'edit';
+    formType: 'create' | 'edit' | 'create-bulk';
     task?: Task;
     currentUser: User;
     allUsers: User[];
@@ -99,7 +100,8 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
     const assignableUsers = useMemo(() => {
         if (!currentUser) return [];
 
-        if (currentUser.role === 'Member') {
+        // For bulk create, always allow selection from assignable users.
+        if (formType !== 'create-bulk' && currentUser.role === 'Member') {
             return allUsers.filter(u => u.id === currentUser.id);
         }
 
@@ -122,7 +124,7 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
         }
         
         return availableUsers;
-    }, [currentUser, allUsers, selectedTeams, selectedRoles]);
+    }, [currentUser, allUsers, selectedTeams, selectedRoles, formType]);
     
     const handleTeamFilterChange = (team: Team) => {
         setSelectedTeams(prev => 
@@ -155,6 +157,8 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
 
       if (formType === 'create') {
         await addTask(formData);
+      } else if (formType === 'create-bulk') {
+        await addBulkIndividualTasks(formData);
       } else if (task) {
         await updateTask(task.id, formData);
       }
@@ -177,18 +181,29 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
   };
 
 
-  const cardTitle = formType === 'create' ? 'Create New Task' : 'Edit Task';
-  const cardDescription = formType === 'create' 
-    ? 'Fill out the details below to create a new task.'
-    : 'Update the details for this task.';
-  const submitButtonText = formType === 'create' ? 'Create Task' : 'Save Changes';
+  const getCardTitle = () => {
+      switch(formType) {
+          case 'create': return 'Create New Task';
+          case 'edit': return 'Edit Task';
+          case 'create-bulk': return 'Create Bulk Individual Tasks';
+      }
+  }
+
+  const getCardDescription = () => {
+       switch(formType) {
+          case 'create': return 'Fill out the details below to create a new task for one or more users.';
+          case 'edit': return 'Update the details for this task.';
+          case 'create-bulk': return 'Create the same task individually for multiple selected users.';
+      }
+  }
+  const submitButtonText = formType === 'create' || formType === 'create-bulk' ? 'Create Tasks' : 'Save Changes';
 
   return (
      <Card className="max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle>{cardTitle}</CardTitle>
+          <CardTitle>{getCardTitle()}</CardTitle>
           <CardDescription>
-            {cardDescription}
+            {getCardDescription()}
           </CardDescription>
         </CardHeader>
          <Form {...form}>
@@ -235,7 +250,7 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
                                         <div
                                             role="combobox"
                                             aria-expanded={openAssignee}
-                                            className={cn("flex min-h-10 w-full items-center gap-1 rounded-md border border-input p-2 text-left", currentUser?.role === 'Member' && "cursor-not-allowed opacity-50")}
+                                            className={cn("flex min-h-10 w-full items-center gap-1 rounded-md border border-input p-2 text-left", currentUser?.role === 'Member' && formType !== 'create-bulk' && "cursor-not-allowed opacity-50")}
                                         >
                                             <div className="flex flex-wrap gap-1">
                                                 {field.value.length === 0 && <span className="text-muted-foreground">Select users...</span>}
@@ -244,7 +259,7 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
                                                     return (
                                                         <Badge key={userId} variant="secondary" className="gap-1.5">
                                                             {user?.name}
-                                                            {currentUser?.role !== 'Member' && (
+                                                            {(currentUser?.role !== 'Member' || formType === 'create-bulk') && (
                                                                 <button
                                                                     type="button"
                                                                     onClick={(e) => {
@@ -390,7 +405,7 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Minute" />
-                                                    </SelectTrigger>
+                                                    </Trigger>
                                                 </FormControl>
                                                 <SelectContent>
                                                     {Array.from({length: 60}, (_, i) => i.toString().padStart(2,'0')).map(min => <SelectItem key={min} value={min}>{min}</SelectItem>)}

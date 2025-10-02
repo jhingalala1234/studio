@@ -1,6 +1,7 @@
 
 
 
+
 "use server";
 
 import { z } from "zod";
@@ -39,6 +40,96 @@ async function createNotification(
         ...(taskId && { taskId })
     });
 }
+
+export async function addBulkIndividualTasks(data: FormData) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    throw new Error("You must be logged in to add tasks.");
+  }
+
+  const rawData = {
+      title: data.get('title') || '',
+      description: data.get('description') || '',
+      assignedToIds: data.getAll('assignedToIds[]') as string[],
+      dueDate: new Date(data.get('dueDate') as string),
+      links: data.getAll('links[]').map(l => l.toString()).filter(l => l),
+  };
+
+  const validatedFields = taskSchema.safeParse(rawData);
+
+  if (!validatedFields.success) {
+      console.error('Validation Errors:', validatedFields.error.flatten().fieldErrors);
+      throw new Error("Invalid fields provided for bulk task creation.");
+  }
+
+  const { title, description, assignedToIds, dueDate, links } = validatedFields.data;
+  const isUrgent = differenceInHours(dueDate, new Date()) < 30;
+
+  const batch = adminDb.batch();
+  const tasksCollection = adminDb.collection("tasks");
+  const notificationsCollection = adminDb.collection("notifications");
+  const logsCollection = adminDb.collection("logs");
+  
+  const assigneesSnapshot = await adminDb.collection('users').where(FieldValue.documentId(), 'in', assignedToIds).get();
+  const assigneeNames = assigneesSnapshot.docs.map(doc => doc.data().name).join(', ');
+  const logMessage = `${currentUser.name} assigned "${title}" to ${assigneeNames} as individual tasks.`;
+  const logRef = logsCollection.doc();
+  batch.set(logRef, {
+      message: logMessage,
+      timestamp: new Date().toISOString(),
+      userId: currentUser.id,
+      // No single taskId for bulk operation log
+  });
+
+
+  for (const assigneeId of assignedToIds) {
+      const taskRef = tasksCollection.doc();
+      const newTask = {
+          title,
+          description: description || '',
+          assignedToIds: [assigneeId], // Assign to one user
+          dueDate: dueDate.toISOString(),
+          status: "To Do" as TaskStatus,
+          assignedById: currentUser.id,
+          createdAt: new Date().toISOString(),
+          links: links || [],
+          urgent: isUrgent,
+      };
+      batch.set(taskRef, newTask);
+
+      // Create notification
+      if (assigneeId !== currentUser.id) {
+          const notifRef = notificationsCollection.doc();
+          const notifMessage = `<strong>${currentUser.name}</strong> assigned a new task to you: <strong>${title}</strong>`;
+          batch.set(notifRef, {
+              userId: assigneeId,
+              actorId: currentUser.id,
+              type: 'TASK_ASSIGNED',
+              message: notifMessage,
+              link: `/dashboard/tasks/${taskRef.id}`,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+              taskId: taskRef.id
+          });
+      }
+  }
+
+  try {
+      await batch.commit();
+  } catch (error) {
+       console.error("Failed to create bulk tasks:", error);
+      if (error instanceof Error && !error.message.includes('NEXT_REDIRECT')) {
+          throw new Error(error.message);
+      }
+  }
+
+  revalidatePath("/dashboard/tasks");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/my-week");
+  revalidatePath("/dashboard/tasks/board");
+  redirect('/dashboard/tasks');
+}
+
 
 export async function addTask(data: FormData) {
   const currentUser = await getCurrentUser();

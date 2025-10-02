@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -15,6 +16,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import AddTaskDialog from './add-task-dialog';
+
 
 interface EnrichedTask {
   id: string;
@@ -36,6 +39,7 @@ export default function TasksLayoutClient({
 }) {
   const pathname = usePathname();
   const isBoardView = pathname.includes('/board');
+  const isCreateView = pathname.includes('/create');
 
   const handleExport = () => {
     const headers = ['Task ID', 'Title', 'Status', 'Due Date', 'Assignees', 'Assigner'];
@@ -64,13 +68,13 @@ export default function TasksLayoutClient({
   return (
     <>
       <div className="flex items-center">
-        {!isBoardView && (
+        {!isBoardView && !isCreateView && (
             <Tabs defaultValue="all" className="mr-auto">
                  <TabsList>
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="active">Active</TabsTrigger>
-                    <TabsTrigger value="missing">Missing</TabsTrigger>
-                    <TabsTrigger value="done">Done</TabsTrigger>
+                    <TabsTrigger value="all" asChild><Link href="?filter=all">All</Link></TabsTrigger>
+                    <TabsTrigger value="active" asChild><Link href="?filter=active">Active</Link></TabsTrigger>
+                    <TabsTrigger value="missing" asChild><Link href="?filter=missing">Missing</Link></TabsTrigger>
+                    <TabsTrigger value="done" asChild><Link href="?filter=done">Done</Link></TabsTrigger>
                 </TabsList>
             </Tabs>
         )}
@@ -97,16 +101,7 @@ export default function TasksLayoutClient({
               Export
             </span>
           </Button>
-          {canCreateTask && (
-             <Button size="sm" className="h-8 gap-1" asChild>
-                <Link href="/dashboard/tasks/create">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        Add Task
-                    </span>
-                </Link>
-             </Button>
-          )}
+          {canCreateTask && <AddTaskDialog />}
         </div>
       </div>
       {children}
