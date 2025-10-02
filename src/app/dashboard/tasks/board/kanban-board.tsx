@@ -185,7 +185,7 @@ export default function KanbanBoard({
 
   if (!boardState) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {[...Array(3)].map((_, i) => (
                 <div key={i} className="space-y-4">
                     <Skeleton className="h-10 w-full" />
@@ -199,7 +199,7 @@ export default function KanbanBoard({
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
         {boardState.columnOrder.map(columnId => {
           const column = boardState.columns[columnId];
           const tasks = column.taskIds.map(taskId => boardState.tasks[taskId]);

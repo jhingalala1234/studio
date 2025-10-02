@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -133,12 +132,12 @@ export function Header({ user }: { user: User }) {
       </nav>
 
       <div className="w-full max-w-7xl px-4 py-3 md:px-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-y-2">
           <div className="flex flex-col">
               <h1 className="font-headline text-2xl font-bold md:text-3xl text-white">
                 {greeting.text}, {user?.name.split(' ')[0]}{greeting.punctuation}
               </h1>
-              <p className="text-md text-muted-foreground">You are the {userTitle} at CloudX.</p>
+              <p className="text-md text-muted-foreground hidden sm:block">You are the {userTitle} at CloudX.</p>
           </div>
 
           <div className="flex items-center justify-end gap-2">

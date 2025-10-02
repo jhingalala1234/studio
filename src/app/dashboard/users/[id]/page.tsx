@@ -28,7 +28,7 @@ const getUserTitle = (role: string, team: string | null): string => {
   return role;
 };
 
-const InfoRow = ({ icon, label, value, isLink = false }: { icon: React.ReactNode, label: string, value: string | null | undefined, isLink?: boolean }) => {
+const InfoRow = ({ icon, label, value, isLink = false, href }: { icon: React.ReactNode, label: string, value: string | null | undefined, isLink?: boolean, href?: string }) => {
     if (!value) return null;
     return (
         <div className="flex items-start gap-4">
@@ -38,7 +38,7 @@ const InfoRow = ({ icon, label, value, isLink = false }: { icon: React.ReactNode
             <div>
                 <p className="text-sm text-muted-foreground">{label}</p>
                 {isLink ? (
-                    <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">
+                    <a href={href || value} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">
                         {value.replace(/^(https?:\/\/)?(www\.)?/, '')}
                     </a>
                 ) : (
@@ -86,7 +86,7 @@ export default async function UserProfilePage({ params }: { params: { id: string
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
             <InfoRow icon={<Briefcase size={18} />} label="Position" value={position} />
             <InfoRow icon={<Users size={18} />} label="Group Name" value={`${user.team} ${user.subTeam ? `(${user.subTeam})` : ''}`} />
             <InfoRow icon={<Mail size={18} />} label="Email" value={user.email} isLink href={`mailto:${user.email}`} />

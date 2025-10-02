@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
@@ -306,7 +305,7 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
                          {(currentUser.role === 'Co-founder' || currentUser.role === 'Secretary') && (
                             <div className="p-4 border rounded-lg space-y-4">
                                <FormLabel>Filter Assignees</FormLabel>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <p className="text-sm font-medium">By Team</p>
                                         {(['Technology', 'Corporate', 'Creatives'] as Team[]).map(team => (

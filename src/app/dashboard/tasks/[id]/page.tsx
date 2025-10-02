@@ -1,3 +1,4 @@
+
 import { notFound } from 'next/navigation';
 import {
   getTaskById,
@@ -73,8 +74,8 @@ export default async function TaskDetailsPage({
   const statusBadgeVariant = {
     'To Do': 'outline',
     'In Progress': 'secondary',
-    Done: 'default',
-    Cancelled: 'destructive',
+    'Done': 'default',
+    'Cancelled': 'destructive',
   } as const;
 
   const enrichedComments = comments.map(comment => {
@@ -89,7 +90,7 @@ export default async function TaskDetailsPage({
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <header className="space-y-2">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <h1 className="font-headline text-3xl font-bold md:text-4xl">
               {task.title}
@@ -107,7 +108,7 @@ export default async function TaskDetailsPage({
               </TooltipProvider>
             )}
           </div>
-           <div className="flex items-center gap-2">
+           <div className="flex flex-wrap items-center gap-2">
             <SummarizeTaskDialog taskId={task.id} />
             {isAssignee && task.status !== 'Done' && task.status !== 'Cancelled' && (
               <MarkAsDoneButton taskId={task.id} />
@@ -199,7 +200,7 @@ export default async function TaskDetailsPage({
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 md:col-span-1">
           <Card>
             <CardHeader>
               <CardTitle>Details</CardTitle>
