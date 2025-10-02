@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { z } from "zod";
@@ -321,6 +322,18 @@ export async function updateTaskStatus(formData: FormData) {
                 `/dashboard/tasks/${taskId}`,
                 taskId
             );
+        }
+
+        // If task is done or cancelled, remove all notifications for it.
+        if (status === 'Done' || status === 'Cancelled') {
+            const notificationsSnapshot = await adminDb.collection('notifications').where('taskId', '==', taskId).get();
+            if (!notificationsSnapshot.empty) {
+                const batch = adminDb.batch();
+                notificationsSnapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+            }
         }
 
         
