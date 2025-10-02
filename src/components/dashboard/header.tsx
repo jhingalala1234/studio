@@ -25,14 +25,14 @@ import { useState, useEffect } from 'react';
 
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: null },
-  { href: '/dashboard/tasks', label: 'Tasks', icon: null },
-  { href: '/dashboard/my-week', label: 'My Week', icon: CalendarCheck },
-  { href: '/dashboard/gantt', label: 'Gantt', icon: GanttChartSquare },
-  { href: '/dashboard/generate-tasks', label: 'Generate Tasks', icon: FilePlus },
-  { href: '/dashboard/announcements', label: 'Announcements', icon: Rss },
-  { href: '/dashboard/users', label: 'Users', icon: null },
-  { href: '/dashboard/logs', label: 'Logs', icon: null },
+  { href: '/dashboard', label: 'Dashboard', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
+  { href: '/dashboard/tasks', label: 'Tasks', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
+  { href: '/dashboard/my-week', label: 'My Week', icon: CalendarCheck, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
+  { href: '/dashboard/gantt', label: 'Gantt', icon: GanttChartSquare, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
+  { href: '/dashboard/generate-tasks', label: 'Generate Tasks', icon: FilePlus, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead'] },
+  { href: '/dashboard/announcements', label: 'Announcements', icon: Rss, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
+  { href: '/dashboard/users', label: 'Users', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
+  { href: '/dashboard/logs', label: 'Logs', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
 ];
 
 const getUserTitle = (role: UserRole, team: Team | null): string => {
@@ -47,6 +47,8 @@ export function Header({ user }: { user: User }) {
   const pathname = usePathname();
   const userTitle = getUserTitle(user.role, user.team);
   const [greeting, setGreeting] = useState<{ text: string; punctuation: string }>({ text: 'Welcome Back', punctuation: '!' });
+
+  const visibleNavItems = navItems.filter(item => item.roles.includes(user.role));
 
   useEffect(() => {
     const currentHour = new Date().getHours();
@@ -83,7 +85,7 @@ export function Header({ user }: { user: User }) {
                     >
                     <Logo />
                     </Link>
-                    {navItems.map(({ href, label }) => (
+                    {visibleNavItems.map(({ href, label }) => (
                     <Link
                         key={href}
                         href={href}
@@ -112,7 +114,7 @@ export function Header({ user }: { user: User }) {
       
       <nav className="flex w-full items-center justify-center border-b border-white/10 px-4 py-2 md:px-6">
           <div className="hidden items-center justify-center gap-6 md:flex">
-            {navItems.map(({ href, label }) => (
+            {visibleNavItems.map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
