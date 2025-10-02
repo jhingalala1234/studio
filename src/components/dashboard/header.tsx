@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -168,19 +169,18 @@ export function Header({ user }: { user: User }) {
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback>{userInitials}</AvatarFallback>
--                  </Avatar>
+                  </Avatar>
                   <span className="sr-only">Toggle user menu</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Support</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={`/dashboard/users/${user.id}`} className="cursor-pointer">My Account</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <form action={logout}>
                   <button type="submit" className="w-full text-left">
-                    <DropdownMenuItem>Logout</DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">Logout</DropdownMenuItem>
                   </button>
                 </form>
               </DropdownMenuContent>
