@@ -33,16 +33,20 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { differenceInHours, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Task, User } from '@/types';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useTransition } from 'react';
 import MarkAsDoneButton from './mark-as-done-button';
 import { getSubordinates } from '@/lib/hierarchy';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import DeleteTaskButton from './delete-task-button';
+import { deleteTask } from './actions';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function TasksClient({ currentUser, users, allTasks: initialTasks }: { currentUser: User, users: User[], allTasks: Task[] }) {
   const [visibleTasks, setVisibleTasks] = useState<Task[] | null>(null);
+  const [isDeleting, startDeleteTransition] = useTransition();
+  const { toast } = useToast();
   
   useEffect(() => {
     async function filterTasks() {
@@ -74,6 +78,31 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     }
     filterTasks();
   }, [currentUser, users, initialTasks]);
+
+  const handleDelete = (taskId: string) => {
+    const originalTasks = visibleTasks;
+    // Optimistic update
+    setVisibleTasks(currentTasks => currentTasks ? currentTasks.filter(t => t.id !== taskId) : null);
+
+    startDeleteTransition(async () => {
+      try {
+        await deleteTask(taskId);
+        toast({
+          title: "Task Deleted",
+          description: "The task has been successfully removed.",
+        });
+      } catch (error) {
+        // Revert on error
+        setVisibleTasks(originalTasks);
+        toast({
+          variant: "destructive",
+          title: "Error deleting task",
+          description:
+            error instanceof Error ? error.message : "An unknown error occurred.",
+        });
+      }
+    });
+  };
 
   const enrichTask = (task: Task) => {
     const assignees = users.filter(u => (task.assignedToIds || []).includes(u.id));
@@ -231,7 +260,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                                 <MarkAsDoneButton taskId={task.id} variant="outline" />
                              )}
                              {canDelete && (
-                                <DeleteTaskButton taskId={task.id} asIcon />
+                                <DeleteTaskButton taskId={task.id} asIcon onDeleted={() => handleDelete(task.id)} isDeleting={isDeleting} />
                              )}
                            </div>
                         </TableCell>
