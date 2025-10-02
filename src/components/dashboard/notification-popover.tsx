@@ -78,7 +78,7 @@ export function NotificationPopover({ user }: { user: User }) {
                 <div className="p-4">
                     <h4 className="text-sm font-medium leading-none">Notifications</h4>
                 </div>
-                <ScrollArea className="h-96">
+                <ScrollArea className="h-[70vh]">
                     {isLoading ? (
                         <div className="p-4 space-y-4">
                             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
