@@ -81,18 +81,27 @@ const generateTasksFromNotesFlow = ai.defineFlow(
   },
   async (input) => {
     const llmResponse = await prompt(input);
-    const generated = llmResponse.output()!;
+
+    if (!llmResponse.output) {
+      throw new Error("LLM response output function is missing");
+    }
+
+    const generated = llmResponse.output!;
+
+    if (!generated) {
+      throw new Error("Generated output is empty or null");
+    }
 
     // Resolve assignee names to IDs
     const resolvedTasks = await Promise.all(generated.tasks.map(async (task) => {
-        let assigneeId = input.currentUser.id; // Default to current user
-        if (task.assigneeName.toLowerCase() !== input.currentUser.name.toLowerCase()) {
-            const user = await findUserByName({ name: task.assigneeName });
-            if (user?.id) {
-                assigneeId = user.id;
-            }
+      let assigneeId = input.currentUser.id; // Default to current user
+      if (task.assigneeName.toLowerCase() !== input.currentUser.name.toLowerCase()) {
+        const user = await findUserByName({ name: task.assigneeName });
+        if (user?.id) {
+          assigneeId = user.id;
         }
-        return { ...task, assigneeId };
+      }
+      return { ...task, assigneeId };
     }));
 
     return { tasks: resolvedTasks as any }; // Cast because we added assigneeId

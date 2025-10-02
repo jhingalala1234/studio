@@ -1,4 +1,3 @@
-
 import { notFound } from 'next/navigation';
 import {
   getTaskById,
@@ -44,18 +43,17 @@ import { Button } from '@/components/ui/button';
 import SummarizeTaskDialog from './summarize-task-dialog';
 
 interface TaskDetailsPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default async function TaskDetailsPage({
-  params,
-}: TaskDetailsPageProps) {
-  const task = await getTaskById(params.id);
+export default async function TaskDetailsPage({ params }: TaskDetailsPageProps) {
+  const resolvedParams = await params;
+  const task = await getTaskById(resolvedParams.id);
   const users = await getAllUsers();
   const currentUser = await getCurrentUser();
-  
+
   if (!task || !currentUser) {
     notFound();
   }
@@ -112,7 +110,7 @@ export default async function TaskDetailsPage({
               </TooltipProvider>
             )}
           </div>
-           <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <SummarizeTaskDialog taskId={task.id} />
             {isAssignee && task.status !== 'Done' && task.status !== 'Cancelled' && (
               <MarkAsDoneButton taskId={task.id} />
@@ -156,10 +154,7 @@ export default async function TaskDetailsPage({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <SubtasksManager
-                  taskId={task.id}
-                  initialSubtasks={subtasks}
-                />
+                <SubtasksManager taskId={task.id} initialSubtasks={subtasks} />
               </CardContent>
             </Card>
           )}
@@ -244,28 +239,28 @@ export default async function TaskDetailsPage({
               <CardTitle>People</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-               <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3">
                 <Users className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">Assignees</span>
-                   <div className="flex flex-col gap-1 mt-1">
+                  <div className="flex flex-col gap-1 mt-1">
                     {assignees.length > 0 ? (
-                        assignees.map(assignee => (
-                             <Link
-                                key={assignee.id}
-                                href={`/dashboard/users/${assignee.id}`}
-                                className="text-sm text-primary hover:underline"
-                            >
-                                {assignee.name}
-                            </Link>
-                        ))
+                      assignees.map(assignee => (
+                        <Link
+                          key={assignee.id}
+                          href={`/dashboard/users/${assignee.id}`}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          {assignee.name}
+                        </Link>
+                      ))
                     ) : (
-                        <span className="text-sm">Unassigned</span>
+                      <span className="text-sm">Unassigned</span>
                     )}
-                   </div>
+                  </div>
                 </div>
               </div>
-               <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3">
                 <Users className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">Assigner</span>
@@ -274,7 +269,7 @@ export default async function TaskDetailsPage({
                       href={`/dashboard/users/${assigner.id}`}
                       className="text-sm text-primary hover:underline"
                     >
-                        {assigner.name}
+                      {assigner.name}
                     </Link>
                   ) : (
                     <span className="text-sm">Unassigned</span>

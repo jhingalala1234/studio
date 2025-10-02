@@ -29,35 +29,36 @@ const getUserTitle = (role: string, team: string | null): string => {
 };
 
 const InfoRow = ({ icon, label, value, isLink = false, href }: { icon: React.ReactNode, label: string, value: string | null | undefined, isLink?: boolean, href?: string }) => {
-    if (!value) return null;
-    return (
-        <div className="flex items-start gap-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
-                {icon}
-            </div>
-            <div>
-                <p className="text-sm text-muted-foreground">{label}</p>
-                {isLink ? (
-                    <a href={href || value} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">
-                        {value.replace(/^(https?:\/\/)?(www\.)?/, '')}
-                    </a>
-                ) : (
-                    <p className="text-sm font-medium">{value}</p>
-                )}
-            </div>
-        </div>
-    );
+  if (!value) return null;
+  return (
+    <div className="flex items-start gap-4">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
+        {icon}
+      </div>
+      <div>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        {isLink ? (
+          <a href={href || value} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">
+            {value.replace(/^(https?:\/\/)?(www\.)?/, '')}
+          </a>
+        ) : (
+          <p className="text-sm font-medium">{value}</p>
+        )}
+      </div>
+    </div>
+  );
 };
 
 interface UserProfilePageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
-  const user = await getUserById(params.id);
-  
+  const resolvedParams = await params;
+  const user = await getUserById(resolvedParams.id);
+
   if (!user) {
     notFound();
   }
