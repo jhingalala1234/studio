@@ -1,5 +1,6 @@
 
 
+
 "use server";
 
 import { z } from "zod";
@@ -251,7 +252,7 @@ export async function deleteTask(taskId: string) {
 
     } catch (error) {
         console.error("Failed to delete task:", error);
-        if (error instanceof Error) {
+        if (error instanceof Error && !error.message.includes('NEXT_REDIRECT')) {
             throw new Error(error.message);
         }
         throw new Error("An unknown error occurred while deleting the task.");
@@ -536,5 +537,7 @@ export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[])
     revalidatePath(`/dashboard/tasks/${taskId}`);
 }
 
+
+    
 
     
