@@ -85,13 +85,11 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     startDeleteTransition(async () => {
       try {
         await deleteTask(taskId);
+        setVisibleTasks(prev => prev ? prev.filter(t => t.id !== taskId) : []);
         toast({
           title: "Task Deleted",
           description: "The task has been successfully removed.",
         });
-        // We need to re-fetch or re-filter the tasks after deletion.
-        // For now, let's just refresh the page. A more advanced solution would be better.
-        router.refresh();
       } catch (error) {
         toast({
           variant: "destructive",
@@ -152,7 +150,6 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                 <TableHead>Assignees</TableHead>
                 <TableHead>Assigner</TableHead>
                 <TableHead className="hidden md:table-cell">Due Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
             </TableRow>
             </TableHeader>
             <TableBody>
@@ -252,18 +249,6 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                                 </Tooltip>
                             )}
                             </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                           <div className="flex items-center justify-end gap-2">
-                             {(task.status === 'To Do' || task.status === 'In Progress') && task.assignees.some(a => a.id === currentUser.id) && (
-                                <MarkAsDoneButton taskId={task.id} variant="outline" />
-                             )}
-                             {canDelete && (
-                                <form action={() => handleDelete(task.id)}>
-                                    <DeleteTaskButton taskId={task.id} asIcon />
-                                </form>
-                             )}
-                           </div>
                         </TableCell>
                     </TableRow>
                 )
