@@ -11,6 +11,7 @@ const userSchema = z.object({
   id: z.string(),
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email'),
+  username: z.string().min(1, 'Username is required'),
   role: z.enum(['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member']),
   team: z.enum(['Technology', 'Corporate', 'Creatives', 'Presidium']).nullable(),
   subTeam: z
@@ -19,6 +20,10 @@ const userSchema = z.object({
       'sponsorship', 'digital-design', 'media',
     ])
     .nullable(),
+  phone: z.string().optional().nullable(),
+  birthday: z.string().optional().nullable(),
+  linkedin: z.string().url().or(z.literal('')).optional().nullable(),
+  github: z.string().url().or(z.literal('')).optional().nullable(),
 });
 
 export async function updateUser(userData: User) {
@@ -33,15 +38,26 @@ export async function updateUser(userData: User) {
   const validatedUser = userSchema.safeParse(userData);
 
   if (!validatedUser.success) {
+    console.error(validatedUser.error.flatten());
     throw new Error('Invalid user data');
   }
 
   const { id, ...dataToUpdate } = validatedUser.data;
 
-  await adminDb.collection('users').doc(id).update(dataToUpdate);
+  // Ensure nullable fields are correctly set to null if empty
+  const processedData = {
+      ...dataToUpdate,
+      phone: dataToUpdate.phone || null,
+      birthday: dataToUpdate.birthday || null,
+      linkedin: dataToUpdate.linkedin || null,
+      github: dataToUpdate.github || null,
+  };
+
+  await adminDb.collection('users').doc(id).update(processedData);
 
   revalidatePath('/dashboard/admin');
   revalidatePath('/dashboard/users');
+  revalidatePath(`/dashboard/users/${id}`);
 }
 
 

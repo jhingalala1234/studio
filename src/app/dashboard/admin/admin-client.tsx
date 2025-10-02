@@ -128,10 +128,15 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Team</TableHead>
               <TableHead>Sub-Team</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Birthday</TableHead>
+              <TableHead>LinkedIn</TableHead>
+              <TableHead>GitHub</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -142,6 +147,13 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                   <Input
                     value={user.name}
                     onChange={e => handleInputChange(user.id, 'name', e.target.value)}
+                    className="w-40"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={user.username}
+                    onChange={e => handleInputChange(user.id, 'username', e.target.value)}
                     className="w-40"
                   />
                 </TableCell>
@@ -203,6 +215,38 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       ))}
                     </SelectContent>
                   </Select>
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={user.phone || ''}
+                    onChange={e => handleInputChange(user.id, 'phone', e.target.value)}
+                    className="w-36"
+                    placeholder="e.g. +1-..."
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={user.birthday || ''}
+                    onChange={e => handleInputChange(user.id, 'birthday', e.target.value)}
+                    className="w-32"
+                    placeholder="YYYY-MM-DD"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={user.linkedin || ''}
+                    onChange={e => handleInputChange(user.id, 'linkedin', e.target.value)}
+                    className="w-48"
+                    placeholder="LinkedIn URL"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={user.github || ''}
+                    onChange={e => handleInputChange(user.id, 'github', e.target.value)}
+                    className="w-48"
+                    placeholder="GitHub URL"
+                  />
                 </TableCell>
                 <TableCell className="text-right">
                   <Button onClick={() => handleSaveChanges(user.id)} disabled={isPending}>
