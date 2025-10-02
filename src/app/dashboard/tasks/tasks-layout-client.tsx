@@ -69,6 +69,7 @@ export default function TasksLayoutClient({
                  <TabsList>
                     <TabsTrigger value="all">All</TabsTrigger>
                     <TabsTrigger value="active">Active</TabsTrigger>
+                    <TabsTrigger value="missing">Missing</TabsTrigger>
                     <TabsTrigger value="done">Done</TabsTrigger>
                 </TabsList>
             </Tabs>
