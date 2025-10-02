@@ -1,0 +1,79 @@
+'use server';
+
+import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
+import { adminDb } from '@/lib/firebase-admin';
+import { getCurrentUser } from '@/lib/auth';
+import type { User } from '@/types';
+import { seedUsers as seedUserData } from '@/lib/seed-data';
+
+const userSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email'),
+  role: z.enum(['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member']),
+  team: z.enum(['Technology', 'Corporate', 'Creatives', 'Presidium']).nullable(),
+  subTeam: z
+    .enum([
+      'dev', 'ui-ux', 'aiml', 'cloud', 'iot', 'events', 'ops', 'pr',
+      'sponsorship', 'digital-design', 'media',
+    ])
+    .nullable(),
+});
+
+export async function updateUser(userData: User) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('Not authenticated');
+
+  const authorizedRoles: (string | undefined)[] = ['Co-founder', 'Secretary', 'Chair of Directors'];
+  if (!authorizedRoles.includes(currentUser.role)) {
+    throw new Error('Not authorized');
+  }
+
+  const validatedUser = userSchema.safeParse(userData);
+
+  if (!validatedUser.success) {
+    throw new Error('Invalid user data');
+  }
+
+  const { id, ...dataToUpdate } = validatedUser.data;
+
+  await adminDb.collection('users').doc(id).update(dataToUpdate);
+
+  revalidatePath('/dashboard/admin');
+  revalidatePath('/dashboard/users');
+}
+
+
+export async function seedUsers(): Promise<User[]> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('Not authenticated');
+
+  const authorizedRoles: (string | undefined)[] = ['Co-founder', 'Secretary', 'Chair of Directors'];
+  if (!authorizedRoles.includes(currentUser.role)) {
+    throw new Error('Not authorized');
+  }
+
+  const usersCollection = adminDb.collection('users');
+  
+  // Delete all existing users
+  const snapshot = await usersCollection.get();
+  const batch = adminDb.batch();
+  snapshot.docs.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+  await batch.commit();
+
+  // Seed new users
+  const seedBatch = adminDb.batch();
+  for (const user of seedUserData) {
+    const docRef = usersCollection.doc(user.id);
+    seedBatch.set(docRef, user);
+  }
+  await seedBatch.commit();
+  
+  revalidatePath('/dashboard/admin');
+  revalidatePath('/dashboard/users');
+
+  return seedUserData;
+}

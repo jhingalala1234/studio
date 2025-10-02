@@ -1,9 +1,8 @@
-
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Search, Users, CalendarCheck, GanttChartSquare, FilePlus, Rss } from 'lucide-react';
+import { Menu, Search, Users, CalendarCheck, GanttChartSquare, FilePlus, Rss, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -32,6 +31,7 @@ const navItems = [
   { href: '/dashboard/generate-tasks', label: 'Generate Tasks', icon: FilePlus, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead'] },
   { href: '/dashboard/announcements', label: 'Announcements', icon: Rss, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/users', label: 'Users', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
+  { href: '/dashboard/admin', label: 'Admin', icon: Shield, roles: ['Co-founder', 'Secretary', 'Chair of Directors'] },
   { href: '/dashboard/logs', label: 'Logs', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
 ];
 
