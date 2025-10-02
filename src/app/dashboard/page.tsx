@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import {
   Activity,
@@ -43,10 +44,11 @@ export default async function Dashboard() {
 
   if (!user) return null;
 
-  const myTasks = tasks.filter(t => t.assignedToId === user?.id);
+  const myTasks = tasks.filter(t => (t.assignedToIds || []).includes(user.id));
   const teamTasks = tasks.filter(t => {
-    const assignedToUser = users.find(u => u.id === t.assignedToId);
-    return assignedToUser?.team === user?.team && t.assignedToId !== user?.id;
+    if (!t.assignedToIds || t.assignedToIds.length === 0) return false;
+    const taskTeam = users.find(u => u.id === t.assignedToIds![0])?.team;
+    return taskTeam === user.team && !t.assignedToIds.includes(user.id);
   });
 
   const recentLogs = logs.slice(0, 5).map(log => {
