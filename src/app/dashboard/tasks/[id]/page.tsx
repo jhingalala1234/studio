@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-
 import { notFound, redirect } from 'next/navigation';
-=======
-import { notFound } from 'next/navigation';
->>>>>>> a029990a8bdeac03ac5f34d4cff8adb6619cc70f
 import {
   getTaskById,
   getAllUsers,
@@ -28,7 +23,6 @@ import {
   MessageSquare,
   CheckSquare,
   Pencil,
-  Trash2,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -95,12 +89,12 @@ export default async function TaskDetailsPage({ params }: TaskDetailsPageProps) 
       userAvatar: user?.avatar,
     };
   });
-  
+
   const handleDeleteTask = async () => {
     'use server';
     await deleteTask(task.id);
     redirect('/dashboard/tasks');
-  }
+  };
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -136,11 +130,11 @@ export default async function TaskDetailsPage({ params }: TaskDetailsPageProps) 
                 </Link>
               </Button>
             )}
-            {canDelete && 
-               <form action={handleDeleteTask}>
+            {canDelete && (
+              <form action={handleDeleteTask}>
                 <DeleteTaskButton taskId={task.id} asIcon={false} />
-               </form>
-            }
+              </form>
+            )}
           </div>
         </div>
         <p className="text-muted-foreground">
@@ -157,9 +151,7 @@ export default async function TaskDetailsPage({ params }: TaskDetailsPageProps) 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                {task.description || 'No description provided.'}
-              </p>
+              <p className="text-muted-foreground">{task.description || 'No description provided.'}</p>
             </CardContent>
           </Card>
 
@@ -188,17 +180,13 @@ export default async function TaskDetailsPage({ params }: TaskDetailsPageProps) 
                   <div key={comment.id} className="flex items-start gap-4">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={comment.userAvatar} />
-                      <AvatarFallback>
-                        {comment.userName.charAt(0)}
-                      </AvatarFallback>
+                      <AvatarFallback>{comment.userName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold">{comment.userName}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(comment.createdAt), {
-                            addSuffix: true,
-                          })}
+                          {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                         </p>
                       </div>
                       <p className="text-muted-foreground">{comment.message}</p>
@@ -206,9 +194,7 @@ export default async function TaskDetailsPage({ params }: TaskDetailsPageProps) 
                   </div>
                 ))
               ) : (
-                <p className="text-center text-sm text-muted-foreground">
-                  No comments yet.
-                </p>
+                <p className="text-center text-sm text-muted-foreground">No comments yet.</p>
               )}
               <Separator />
               <AddCommentForm taskId={task.id} currentUser={currentUser} />
@@ -227,9 +213,7 @@ export default async function TaskDetailsPage({ params }: TaskDetailsPageProps) 
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">Status</span>
                   <div className="flex items-center gap-2">
-                    <Badge variant={statusBadgeVariant[task.status]}>
-                      {task.status}
-                    </Badge>
+                    <Badge variant={statusBadgeVariant[task.status]}>{task.status}</Badge>
                   </div>
                 </div>
               </div>
@@ -243,9 +227,7 @@ export default async function TaskDetailsPage({ params }: TaskDetailsPageProps) 
                 <CalendarIcon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">Due Date</span>
-                  <span className="text-sm">
-                    {format(new Date(task.dueDate), 'PPP p')}
-                  </span>
+                  <span className="text-sm">{format(new Date(task.dueDate), 'PPP p')}</span>
                 </div>
               </div>
             </CardContent>
@@ -316,9 +298,7 @@ export default async function TaskDetailsPage({ params }: TaskDetailsPageProps) 
                       </Link>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No links attached.
-                    </p>
+                    <p className="text-sm text-muted-foreground">No links attached.</p>
                   )}
                 </div>
               </div>

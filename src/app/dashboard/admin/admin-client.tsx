@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useRef } from 'react';
@@ -37,12 +36,11 @@ import {
 import { Download, Upload } from 'lucide-react';
 import Papa from 'papaparse';
 
-
 const roles: UserRole[] = ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'];
-const teams: (Team | null)[] = ['Presidium', 'Technology', 'Corporate', 'Creatives', null];
-const subTeams: (SubTeam | null)[] = [
-    'dev', 'ui-ux', 'aiml', 'cloud', 'iot', 
-    'events', 'ops', 'pr', 'sponsorship', 
+const teams: (Team | null | string)[] = ['Presidium', 'Technology', 'Corporate', 'Creatives', null];
+const subTeams: (SubTeam | null | string)[] = [
+    'dev', 'ui-ux', 'aiml', 'cloud', 'iot',
+    'events', 'ops', 'pr', 'sponsorship',
     'digital-design', 'media', null
 ];
 const NONE_VALUE = "__NONE__";
@@ -78,7 +76,6 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
           title: 'Error',
           description: error instanceof Error ? error.message : 'Failed to update user.',
         });
-        // Revert changes on error if needed
         setUsers(initialUsers);
       }
     });
@@ -123,16 +120,16 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-           const parsedUsers = results.data.map(user => ({
-                ...user,
-                // papaparse reads everything as strings, so we need to convert nullish values
-                team: user.team === 'null' || user.team === '' ? null : user.team,
-                subTeam: user.subTeam === 'null' || user.subTeam === '' ? null : user.subTeam,
-                phone: user.phone === 'null' || user.phone === '' ? null : user.phone,
-                birthday: user.birthday === 'null' || user.birthday === '' ? null : user.birthday,
-                linkedin: user.linkedin === 'null' || user.linkedin === '' ? null : user.linkedin,
-                github: user.github === 'null' || user.github === '' ? null : user.github,
-            }));
+          // Cast user as any temporarily to fix CSV string nulls
+          const parsedUsers = results.data.map((user: any) => ({
+            ...user,
+            team: user.team === 'null' || user.team === '' ? null : user.team,
+            subTeam: user.subTeam === 'null' || user.subTeam === '' ? null : user.subTeam,
+            phone: user.phone === 'null' || user.phone === '' ? null : user.phone,
+            birthday: user.birthday === 'null' || user.birthday === '' ? undefined : user.birthday,
+            linkedin: user.linkedin === 'null' || user.linkedin === '' ? null : user.linkedin,
+            github: user.github === 'null' || user.github === '' ? null : user.github,
+          })) as User[];
           setUsers(parsedUsers);
           toast({
             title: 'CSV Loaded',
@@ -158,193 +155,193 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
     <Card className="glass">
       <CardContent className="pt-6">
         <div className="flex justify-end gap-2 mb-4">
-            <Button variant="outline" onClick={handleDownloadCsv} disabled={isPending}>
-              <Download className="mr-2 h-4 w-4" />
-              Download CSV
-            </Button>
-            <Button variant="outline" onClick={handleUploadClick} disabled={isPending}>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload CSV
-            </Button>
-            <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                onChange={handleFileUpload}
-                accept=".csv"
-            />
-           <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" disabled={isPending}>
-                  {isPending ? 'Seeding...' : 'Seed Database'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will delete all existing user data and replace it with the data currently in the table. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleSeedDatabase}>Continue</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          <Button variant="outline" onClick={handleDownloadCsv} disabled={isPending}>
+            <Download className="mr-2 h-4 w-4" />
+            Download CSV
+          </Button>
+          <Button variant="outline" onClick={handleUploadClick} disabled={isPending}>
+            <Upload className="mr-2 h-4 w-4" />
+            Upload CSV
+          </Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileUpload}
+            accept=".csv"
+          />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={isPending}>
+                {isPending ? 'Seeding...' : 'Seed Database'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will delete all existing user data and replace it with the data currently in the table. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSeedDatabase}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
         <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Password</TableHead>
-              <TableHead>Avatar URL</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Team</TableHead>
-              <TableHead>Sub-Team</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Birthday</TableHead>
-              <TableHead>LinkedIn</TableHead>
-              <TableHead>GitHub</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map(user => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <Input
-                    value={user.name}
-                    onChange={e => handleInputChange(user.id, 'name', e.target.value)}
-                    className="w-40"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={user.username}
-                    onChange={e => handleInputChange(user.id, 'username', e.target.value)}
-                    className="w-40"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="email"
-                    value={user.email}
-                    onChange={e => handleInputChange(user.id, 'email', e.target.value)}
-                    className="w-48"
-                  />
-                </TableCell>
-                 <TableCell>
-                  <Input
-                    value={user.password || ''}
-                    onChange={e => handleInputChange(user.id, 'password', e.target.value)}
-                    className="w-40"
-                    placeholder="New Password"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={user.avatar || ''}
-                    onChange={e => handleInputChange(user.id, 'avatar', e.target.value)}
-                    className="w-48"
-                    placeholder="Avatar Image URL"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={user.role}
-                    onValueChange={(value: UserRole) => handleInputChange(user.id, 'role', value)}
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map(role => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={user.team || NONE_VALUE}
-                    onValueChange={(value: string) => handleInputChange(user.id, 'team', value)}
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Select team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teams.map(team => (
-                        <SelectItem key={team || 'null'} value={team || NONE_VALUE}>
-                          {team || 'None'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                 <TableCell>
-                  <Select
-                    value={user.subTeam || NONE_VALUE}
-                    onValueChange={(value: string) => handleInputChange(user.id, 'subTeam', value)}
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Select sub-team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subTeams.map(subTeam => (
-                        <SelectItem key={subTeam || 'null'} value={subTeam || NONE_VALUE}>
-                          {subTeam || 'None'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={user.phone || ''}
-                    onChange={e => handleInputChange(user.id, 'phone', e.target.value)}
-                    className="w-36"
-                    placeholder="e.g. +1-..."
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={user.birthday || ''}
-                    onChange={e => handleInputChange(user.id, 'birthday', e.target.value)}
-                    className="w-32"
-                    placeholder="YYYY-MM-DD"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={user.linkedin || ''}
-                    onChange={e => handleInputChange(user.id, 'linkedin', e.target.value)}
-                    className="w-48"
-                    placeholder="LinkedIn URL"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={user.github || ''}
-                    onChange={e => handleInputChange(user.id, 'github', e.target.value)}
-                    className="w-48"
-                    placeholder="GitHub URL"
-                  />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button onClick={() => handleSaveChanges(user.id)} disabled={isPending}>
-                    {isPending ? 'Saving...' : 'Save'}
-                  </Button>
-                </TableCell>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Password</TableHead>
+                <TableHead>Avatar URL</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Team</TableHead>
+                <TableHead>Sub-Team</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Birthday</TableHead>
+                <TableHead>LinkedIn</TableHead>
+                <TableHead>GitHub</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {users.map(user => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <Input
+                      value={user.name}
+                      onChange={e => handleInputChange(user.id, 'name', e.target.value)}
+                      className="w-40"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={user.username}
+                      onChange={e => handleInputChange(user.id, 'username', e.target.value)}
+                      className="w-40"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="email"
+                      value={user.email}
+                      onChange={e => handleInputChange(user.id, 'email', e.target.value)}
+                      className="w-48"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={user.password || ''}
+                      onChange={e => handleInputChange(user.id, 'password', e.target.value)}
+                      className="w-40"
+                      placeholder="New Password"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={user.avatar || ''}
+                      onChange={e => handleInputChange(user.id, 'avatar', e.target.value)}
+                      className="w-48"
+                      placeholder="Avatar Image URL"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={user.role}
+                      onValueChange={(value: UserRole) => handleInputChange(user.id, 'role', value)}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roles.map(role => (
+                          <SelectItem key={role} value={role}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={user.team || NONE_VALUE}
+                      onValueChange={(value: string) => handleInputChange(user.id, 'team', value === NONE_VALUE ? null : value)}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Select team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map(team => (
+                          <SelectItem key={team || 'null'} value={team || NONE_VALUE}>
+                            {team || 'None'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={user.subTeam || NONE_VALUE}
+                      onValueChange={(value: string) => handleInputChange(user.id, 'subTeam', value === NONE_VALUE ? null : value)}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Select sub-team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subTeams.map(subTeam => (
+                          <SelectItem key={subTeam || 'null'} value={subTeam || NONE_VALUE}>
+                            {subTeam || 'None'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={user.phone || ''}
+                      onChange={e => handleInputChange(user.id, 'phone', e.target.value)}
+                      className="w-36"
+                      placeholder="e.g. +1-..."
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={user.birthday || ''}
+                      onChange={e => handleInputChange(user.id, 'birthday', e.target.value)}
+                      className="w-32"
+                      placeholder="YYYY-MM-DD"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={user.linkedin || ''}
+                      onChange={e => handleInputChange(user.id, 'linkedin', e.target.value)}
+                      className="w-48"
+                      placeholder="LinkedIn URL"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={user.github || ''}
+                      onChange={e => handleInputChange(user.id, 'github', e.target.value)}
+                      className="w-48"
+                      placeholder="GitHub URL"
+                    />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button onClick={() => handleSaveChanges(user.id)} disabled={isPending}>
+                      {isPending ? 'Saving...' : 'Save'}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>
