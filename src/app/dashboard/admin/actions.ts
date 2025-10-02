@@ -54,13 +54,16 @@ export async function updateUser(userData: User) {
       github: dataToUpdate.github || null,
   };
 
+  if (!adminDb) {
+    throw new Error('Database not initialized.');
+  }
+
   await adminDb.collection('users').doc(id).update(processedData);
 
   revalidatePath('/dashboard/admin');
   revalidatePath('/dashboard/users');
   revalidatePath(`/dashboard/users/${id}`);
 }
-
 
 export async function seedUsers(usersToSeed: User[]): Promise<User[]> {
   const currentUser = await getCurrentUser();
@@ -69,6 +72,10 @@ export async function seedUsers(usersToSeed: User[]): Promise<User[]> {
   const authorizedRoles: (string | undefined)[] = ['Co-founder', 'Secretary', 'Chair of Directors'];
   if (!authorizedRoles.includes(currentUser.role)) {
     throw new Error('Not authorized');
+  }
+
+  if (!adminDb) {
+    throw new Error('Database not initialized.');
   }
 
   const usersCollection = adminDb.collection('users');

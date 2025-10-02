@@ -24,6 +24,9 @@ export async function getCurrentUser(): Promise<User | null> {
             return null;
         }
         
+        if (!adminDb) {
+            throw new Error('Database not initialized.');
+        }
         const userDoc = await adminDb.collection('users').doc(userId).get();
         if (!userDoc.exists) {
             return null;
@@ -41,6 +44,9 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export async function login(email: string, password: string):Promise<void> {
+    if (!adminDb) {
+        throw new Error('Database not initialized.');
+    }
     const usersRef = adminDb.collection("users");
     const q = usersRef.where("email", "==", email);
     const querySnapshot = await q.get();
