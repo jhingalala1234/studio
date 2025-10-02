@@ -405,7 +405,7 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Minute" />
-                                                    </Trigger>
+                                                    </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
                                                     {Array.from({length: 60}, (_, i) => i.toString().padStart(2,'0')).map(min => <SelectItem key={min} value={min}>{min}</SelectItem>)}

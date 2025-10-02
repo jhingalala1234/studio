@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,8 +15,10 @@ import { PlusCircle, User, Users } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AddTaskDialog() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="h-8 gap-1">
           <PlusCircle className="h-3.5 w-3.5" />
@@ -32,7 +35,7 @@ export default function AddTaskDialog() {
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-2">
-          <Button asChild variant="outline" className="h-20">
+          <Button asChild variant="outline" className="h-20" onClick={() => setOpen(false)}>
             <Link href="/dashboard/tasks/create">
               <div className="flex flex-col items-center gap-2">
                 <User className="h-6 w-6" />
@@ -40,7 +43,7 @@ export default function AddTaskDialog() {
               </div>
             </Link>
           </Button>
-          <Button asChild variant="outline" className="h-20">
+          <Button asChild variant="outline" className="h-20" onClick={() => setOpen(false)}>
             <Link href="/dashboard/tasks/create-bulk">
                <div className="flex flex-col items-center gap-2">
                 <Users className="h-6 w-6" />
