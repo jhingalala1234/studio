@@ -4,6 +4,7 @@
 
 
 
+
 "use server";
 
 import { z } from "zod";
@@ -13,7 +14,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/auth";
 import { differenceInHours } from 'date-fns';
 import type { TaskStatus, Subtask } from "@/types";
-import {FieldValue} from 'firebase-admin/firestore';
+import {FieldValue, FieldPath} from 'firebase-admin/firestore';
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -72,7 +73,7 @@ export async function addBulkIndividualTasks(data: FormData) {
   const notificationsCollection = adminDb.collection("notifications");
   const logsCollection = adminDb.collection("logs");
   
-  const assigneesSnapshot = await adminDb.collection('users').where(FieldValue.documentId(), 'in', assignedToIds).get();
+  const assigneesSnapshot = await adminDb.collection('users').where(FieldPath.documentId(), 'in', assignedToIds).get();
   const assigneeNames = assigneesSnapshot.docs.map(doc => doc.data().name).join(', ');
   const logMessage = `${currentUser.name} assigned "${title}" to ${assigneeNames} as individual tasks.`;
   const logRef = logsCollection.doc();
@@ -195,7 +196,7 @@ export async function addTask(data: FormData) {
     
     // Log message
     if (assignedToIds.length > 0) {
-        const assigneesSnapshot = await adminDb.collection('users').where(FieldValue.documentId(), 'in', assignedToIds).get();
+        const assigneesSnapshot = await adminDb.collection('users').where(FieldPath.documentId(), 'in', assignedToIds).get();
         const assigneeNames = assigneesSnapshot.docs.map(doc => doc.data().name).join(', ');
 
         const logMessage = `${currentUser.name} assigned "${newTask.title}" to ${assigneeNames}.`;
@@ -634,5 +635,6 @@ export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[])
     
 
     
+
 
 
