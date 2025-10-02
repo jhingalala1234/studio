@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -111,8 +112,8 @@ export function Header({ user }: { user: User }) {
         </div>
       </div>
       
-      <nav className="flex w-full items-center justify-center border-b border-white/10 px-4 py-2 md:px-6">
-          <div className="hidden items-center justify-center gap-6 md:flex">
+      <nav className="hidden w-full items-center justify-center border-b border-white/10 px-4 py-2 md:flex md:px-6">
+          <div className="flex items-center justify-center gap-6">
             {visibleNavItems.map(({ href, label }) => (
               <Link
                 key={href}
@@ -137,7 +138,7 @@ export function Header({ user }: { user: User }) {
               <h1 className="font-headline text-2xl font-bold md:text-3xl text-white">
                 {greeting.text}, {user?.name.split(' ')[0]}{greeting.punctuation}
               </h1>
-              <p className="text-md text-muted-foreground hidden sm:block">You are the {userTitle} at CloudX.</p>
+              <p className="text-md text-muted-foreground">{`You are the ${userTitle} at CloudX.`}</p>
           </div>
 
           <div className="flex items-center justify-end gap-2">
