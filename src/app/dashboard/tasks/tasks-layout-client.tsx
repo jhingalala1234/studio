@@ -4,12 +4,11 @@
 
 import {
   File,
-  PlusCircle,
   LayoutGrid,
   Rows,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Tabs,
@@ -17,6 +16,13 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import AddTaskDialog from './add-task-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 interface EnrichedTask {
@@ -28,6 +34,13 @@ interface EnrichedTask {
   assigner: string;
 }
 
+const filterOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'active', label: 'Active' },
+    { value: 'missing', label: 'Missing' },
+    { value: 'done', label: 'Done' },
+];
+
 export default function TasksLayoutClient({ 
     canCreateTask, 
     children, 
@@ -38,8 +51,13 @@ export default function TasksLayoutClient({
     tasks: EnrichedTask[] 
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
   const isBoardView = pathname.includes('/board');
   const isCreateView = pathname.includes('/create');
+  
+  const currentFilter = searchParams.get('filter') || 'all';
 
   const handleExport = () => {
     const headers = ['Task ID', 'Title', 'Status', 'Due Date', 'Assignees', 'Assigner'];
@@ -52,7 +70,7 @@ export default function TasksLayoutClient({
         `"${task.assigner.replace(/"/g, '""')}"`
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-s8," 
+    const csvContent = "data:text/csv;charset=utf-8," 
         + headers.join(",") + "\n"
         + rows.join("\n");
         
@@ -64,19 +82,38 @@ export default function TasksLayoutClient({
     link.click();
     document.body.removeChild(link);
   }
+  
+  const handleFilterChange = (value: string) => {
+    router.push(`${pathname}?filter=${value}`);
+  }
 
   return (
     <>
       <div className="flex items-center">
         {!isBoardView && !isCreateView && (
-            <Tabs defaultValue="all" className="mr-auto">
-                 <TabsList>
-                    <TabsTrigger value="all" asChild><Link href="?filter=all">All</Link></TabsTrigger>
-                    <TabsTrigger value="active" asChild><Link href="?filter=active">Active</Link></TabsTrigger>
-                    <TabsTrigger value="missing" asChild><Link href="?filter=missing">Missing</Link></TabsTrigger>
-                    <TabsTrigger value="done" asChild><Link href="?filter=done">Done</Link></TabsTrigger>
-                </TabsList>
-            </Tabs>
+            <>
+                <div className="mr-auto hidden md:block">
+                    <Tabs defaultValue={currentFilter} onValueChange={handleFilterChange}>
+                        <TabsList>
+                            {filterOptions.map(opt => (
+                                <TabsTrigger key={opt.value} value={opt.value}>{opt.label}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                </div>
+                <div className="mr-auto md:hidden">
+                    <Select value={currentFilter} onValueChange={handleFilterChange}>
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="Filter tasks" />
+                        </SelectTrigger>
+                        <SelectContent>
+                             {filterOptions.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </>
         )}
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" variant={!isBoardView ? 'secondary' : 'outline'} className="h-8 gap-1" asChild>
