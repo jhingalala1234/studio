@@ -11,6 +11,8 @@ const userSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email'),
   username: z.string().min(1, 'Username is required'),
+  avatar: z.string().url().or(z.literal('')),
+  password: z.string().min(1, 'Password is required'),
   role: z.enum(['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member']),
   team: z.enum(['Technology', 'Corporate', 'Creatives', 'Presidium']).nullable(),
   subTeam: z

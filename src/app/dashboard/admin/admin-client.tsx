@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Download, Upload } from 'lucide-react';
 import Papa from 'papaparse';
-import { users as initialSeedData } from '@/lib/seed-data';
 
 
 const roles: UserRole[] = ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'];
@@ -201,6 +200,8 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
               <TableHead>Name</TableHead>
               <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Password</TableHead>
+              <TableHead>Avatar URL</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Team</TableHead>
               <TableHead>Sub-Team</TableHead>
@@ -234,6 +235,22 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                     value={user.email}
                     onChange={e => handleInputChange(user.id, 'email', e.target.value)}
                     className="w-48"
+                  />
+                </TableCell>
+                 <TableCell>
+                  <Input
+                    value={user.password || ''}
+                    onChange={e => handleInputChange(user.id, 'password', e.target.value)}
+                    className="w-40"
+                    placeholder="New Password"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={user.avatar || ''}
+                    onChange={e => handleInputChange(user.id, 'avatar', e.target.value)}
+                    className="w-48"
+                    placeholder="Avatar Image URL"
                   />
                 </TableCell>
                 <TableCell>
