@@ -84,16 +84,23 @@ export default function TasksLayoutClient({
   }
   
   const handleFilterChange = (value: string) => {
-    router.push(`${pathname}?filter=${value}`);
+    // When on the main tasks page, we navigate with a filter.
+    // The tabs content will handle showing the correct table based on the search param.
+    // For other views like board/create, we don't apply the filter in the URL.
+    const newPath = pathname.endsWith('/tasks') ? `${pathname}?filter=${value}` : pathname;
+    router.push(newPath);
   }
+
+  const tabValue = pathname.endsWith('/tasks') ? currentFilter : undefined;
+
 
   return (
     <>
-      <div className="flex items-center">
+      <div className="flex items-center gap-4">
         {!isBoardView && !isCreateView && (
             <>
-                <div className="mr-auto hidden md:block">
-                    <Tabs defaultValue={currentFilter} onValueChange={handleFilterChange}>
+                <div className="hidden md:block">
+                    <Tabs value={tabValue} onValueChange={handleFilterChange}>
                         <TabsList>
                             {filterOptions.map(opt => (
                                 <TabsTrigger key={opt.value} value={opt.value}>{opt.label}</TabsTrigger>
@@ -101,7 +108,7 @@ export default function TasksLayoutClient({
                         </TabsList>
                     </Tabs>
                 </div>
-                <div className="mr-auto md:hidden">
+                <div className="md:hidden">
                     <Select value={currentFilter} onValueChange={handleFilterChange}>
                         <SelectTrigger className="w-[150px]">
                             <SelectValue placeholder="Filter tasks" />
