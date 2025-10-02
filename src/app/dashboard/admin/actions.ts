@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase-admin';
 import { getCurrentUser } from '@/lib/auth';
 import type { User } from '@/types';
-import { users as seedUserData } from '@/lib/seed-data';
 
 const userSchema = z.object({
   id: z.string(),
@@ -61,7 +60,7 @@ export async function updateUser(userData: User) {
 }
 
 
-export async function seedUsers(): Promise<User[]> {
+export async function seedUsers(usersToSeed: User[]): Promise<User[]> {
   const currentUser = await getCurrentUser();
   if (!currentUser) throw new Error('Not authenticated');
 
@@ -82,7 +81,12 @@ export async function seedUsers(): Promise<User[]> {
 
   // Seed new users
   const seedBatch = adminDb.batch();
-  for (const user of seedUserData) {
+  for (const user of usersToSeed) {
+    // Basic validation, more robust validation can be added
+    if (!user.id || !user.name || !user.email) {
+        console.warn('Skipping invalid user object during seed:', user);
+        continue;
+    }
     const docRef = usersCollection.doc(user.id);
     seedBatch.set(docRef, user);
   }
@@ -91,5 +95,5 @@ export async function seedUsers(): Promise<User[]> {
   revalidatePath('/dashboard/admin');
   revalidatePath('/dashboard/users');
 
-  return seedUserData;
+  return usersToSeed;
 }

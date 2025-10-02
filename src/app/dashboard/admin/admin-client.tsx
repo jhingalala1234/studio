@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import type { User, UserRole, Team, SubTeam } from '@/types';
 import {
   Table,
@@ -34,6 +34,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Download, Upload } from 'lucide-react';
+import Papa from 'papaparse';
+import { users as initialSeedData } from '@/lib/seed-data';
+
 
 const roles: UserRole[] = ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'];
 const teams: (Team | null)[] = ['Presidium', 'Technology', 'Corporate', 'Creatives', null];
@@ -48,6 +52,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (userId: string, field: keyof User, value: string | null) => {
     setUsers(prevUsers =>
@@ -83,11 +88,11 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
   const handleSeedDatabase = () => {
     startTransition(async () => {
       try {
-        const newUsers = await seedUsers();
+        const newUsers = await seedUsers(users);
         setUsers(newUsers);
         toast({
           title: 'Database Seeded',
-          description: 'User data has been reset to the initial seed.',
+          description: 'User data has been replaced with the data from the table.',
         });
       } catch (error) {
         toast({
@@ -99,10 +104,76 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
     });
   };
 
+  const handleDownloadCsv = () => {
+    const csv = Papa.unparse(users);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'users_template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      Papa.parse<User>(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+           const parsedUsers = results.data.map(user => ({
+                ...user,
+                // papaparse reads everything as strings, so we need to convert nullish values
+                team: user.team === 'null' || user.team === '' ? null : user.team,
+                subTeam: user.subTeam === 'null' || user.subTeam === '' ? null : user.subTeam,
+                phone: user.phone === 'null' || user.phone === '' ? null : user.phone,
+                birthday: user.birthday === 'null' || user.birthday === '' ? null : user.birthday,
+                linkedin: user.linkedin === 'null' || user.linkedin === '' ? null : user.linkedin,
+                github: user.github === 'null' || user.github === '' ? null : user.github,
+            }));
+          setUsers(parsedUsers);
+          toast({
+            title: 'CSV Loaded',
+            description: `${parsedUsers.length} users loaded into the table. Click 'Seed Database' to save.`,
+          });
+        },
+        error: (error) => {
+          toast({
+            variant: 'destructive',
+            title: 'CSV Parsing Error',
+            description: error.message,
+          });
+        }
+      });
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <Card className="glass">
       <CardContent className="pt-6">
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end gap-2 mb-4">
+            <Button variant="outline" onClick={handleDownloadCsv} disabled={isPending}>
+              <Download className="mr-2 h-4 w-4" />
+              Download CSV
+            </Button>
+            <Button variant="outline" onClick={handleUploadClick} disabled={isPending}>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload CSV
+            </Button>
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                onChange={handleFileUpload}
+                accept=".csv"
+            />
            <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" disabled={isPending}>
@@ -113,7 +184,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will delete all existing user data and replace it with the initial seed data. This action cannot be undone.
+                    This will delete all existing user data and replace it with the data currently in the table. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
