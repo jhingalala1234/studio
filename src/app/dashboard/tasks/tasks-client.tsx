@@ -5,8 +5,6 @@ import {
   AlertTriangle,
   Flame,
   Users,
-  CheckCircle2,
-  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -34,14 +32,13 @@ import { differenceInHours, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Task, User } from '@/types';
 import { useMemo, useState, useEffect, useTransition } from 'react';
-import MarkAsDoneButton from './mark-as-done-button';
 import { getSubordinates } from '@/lib/hierarchy';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import DeleteTaskButton from './delete-task-button';
 import { deleteTask } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 
 export default function TasksClient({ currentUser, users, allTasks: initialTasks }: { currentUser: User, users: User[], allTasks: Task[] }) {
@@ -49,6 +46,9 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
   const [isDeleting, startDeleteTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const currentFilter = searchParams.get('filter') || 'all';
   
   useEffect(() => {
     async function filterTasks() {
@@ -106,17 +106,30 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     const assigner = users.find(u => u.id === task.assignedById);
     return {
       ...task,
-      assignees: assignees.length > 0 ? assignees : [{ id: 'unassigned', name: 'Unassigned', email: '', role: 'Member', team: null, subTeam: null, avatar: '' }],
+      assignees: assignees.length > 0 ? assignees : [{ id: 'unassigned', name: 'Unassigned', email: '', role: 'Member', team: null, subTeam: null, avatar: '', username: '' }],
       assignerName: assigner?.name || 'System',
       assignerAvatar: assigner?.avatar,
       assignerId: assigner?.id,
     };
   };
 
-  const allTasks = visibleTasks ? visibleTasks.map(enrichTask) : [];
-  const activeTasks = allTasks.filter(t => t.status === 'To Do' || t.status === 'In Progress');
-  const doneTasks = allTasks.filter(t => t.status === 'Done' || t.status === 'Cancelled');
-  const missingTasks = allTasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'Done' && t.status !== 'Cancelled');
+  const filteredAndEnrichedTasks = useMemo(() => {
+    if (!visibleTasks) return null;
+    
+    const enriched = visibleTasks.map(enrichTask);
+
+    switch(currentFilter) {
+      case 'active':
+        return enriched.filter(t => t.status === 'To Do' || t.status === 'In Progress');
+      case 'missing':
+        return enriched.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'Done' && t.status !== 'Cancelled');
+      case 'done':
+        return enriched.filter(t => t.status === 'Done' || t.status === 'Cancelled');
+      case 'all':
+      default:
+        return enriched;
+    }
+  }, [visibleTasks, currentFilter, users]);
 
 
   const statusBadgeVariant = {
@@ -150,6 +163,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                 <TableHead>Assignees</TableHead>
                 <TableHead>Assigner</TableHead>
                 <TableHead className="hidden md:table-cell">Due Date</TableHead>
+                <TableHead><span className="sr-only">Actions</span></TableHead>
             </TableRow>
             </TableHeader>
             <TableBody>
@@ -250,6 +264,13 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                             )}
                             </div>
                         </TableCell>
+                        <TableCell className="text-right">
+                          {canDelete && (
+                            <form action={() => handleDelete(task.id)}>
+                              <DeleteTaskButton taskId={task.id} asIcon={true} />
+                            </form>
+                          )}
+                        </TableCell>
                     </TableRow>
                 )
             })}
@@ -260,56 +281,17 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
   }
 
   return (
-    <Tabs defaultValue="all">
-      <TabsContent value="all">
+    <Tabs defaultValue="all" value={currentFilter}>
+      <TabsContent value={currentFilter}>
         <Card className="glass">
           <CardHeader>
-            <CardTitle>All Tasks</CardTitle>
+            <CardTitle>Tasks</CardTitle>
             <CardDescription>
               Manage and track all relevant tasks for you and your team.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {renderTable(allTasks, visibleTasks === null)}
-          </CardContent>
-        </Card>
-      </TabsContent>
-        <TabsContent value="active">
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle>Active Tasks</CardTitle>
-              <CardDescription>
-                Tasks that are currently 'To Do' or 'In Progress'.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderTable(activeTasks, visibleTasks === null)}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="missing">
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle>Missing</CardTitle>
-              <CardDescription>
-                Tasks that have missed their deadline.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderTable(missingTasks, visibleTasks === null)}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      <TabsContent value="done">
-        <Card className="glass">
-          <CardHeader>
-            <CardTitle>Completed & Cancelled Tasks</CardTitle>
-            <CardDescription>
-              Tasks that have been marked as 'Done' or 'Cancelled'.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {renderTable(doneTasks, visibleTasks === null)}
+            {renderTable(filteredAndEnrichedTasks || [], filteredAndEnrichedTasks === null)}
           </CardContent>
         </Card>
       </TabsContent>

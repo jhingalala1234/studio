@@ -84,10 +84,7 @@ export default function TasksLayoutClient({
   }
   
   const handleFilterChange = (value: string) => {
-    // When on the main tasks page, we navigate with a filter.
-    // The tabs content will handle showing the correct table based on the search param.
-    // For other views like board/create, we don't apply the filter in the URL.
-    const newPath = pathname.endsWith('/tasks') ? `${pathname}?filter=${value}` : pathname;
+    const newPath = `/dashboard/tasks?filter=${value}`;
     router.push(newPath);
   }
 
