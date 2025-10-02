@@ -111,3 +111,6 @@ body {
 .gantt-chart-container .gantt-title {
     font-weight: 600;
 }
+.gantt-chart-container .bar-label {
+    fill: hsl(var(--foreground)) !important;
+}

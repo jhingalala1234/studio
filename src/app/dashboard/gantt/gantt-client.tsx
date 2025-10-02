@@ -32,7 +32,7 @@ export default function GanttChartClient({ tasks }: { tasks: Task[] }) {
         <Gantt
             tasks={ganttData}
             viewMode={ViewMode.Day}
-            listCellWidth=""
+            listCellWidth="150px"
             ganttHeight={500}
             columnWidth={65}
         />
