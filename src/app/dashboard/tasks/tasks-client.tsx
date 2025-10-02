@@ -31,24 +31,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { differenceInHours, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Task, User } from '@/types';
-import { useMemo, useState, useEffect, useTransition } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { getSubordinates } from '@/lib/hierarchy';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import DeleteTaskButton from './delete-task-button';
-import { deleteTask } from './actions';
-import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 
 export default function TasksClient({ currentUser, users, allTasks: initialTasks }: { currentUser: User, users: User[], allTasks: Task[] }) {
   const [visibleTasks, setVisibleTasks] = useState<Task[] | null>(null);
-  const [isDeleting, startDeleteTransition] = useTransition();
-  const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const currentFilter = searchParams.get('filter') || 'all';
+
+  const userMap = useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
   
   useEffect(() => {
     async function filterTasks() {
@@ -81,55 +78,44 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     filterTasks();
   }, [currentUser, users, initialTasks]);
 
-  const handleDelete = (taskId: string) => {
-    startDeleteTransition(async () => {
-      try {
-        await deleteTask(taskId);
-        setVisibleTasks(prev => prev ? prev.filter(t => t.id !== taskId) : []);
-        toast({
-          title: "Task Deleted",
-          description: "The task has been successfully removed.",
-        });
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Error deleting task",
-          description:
-            error instanceof Error ? error.message : "An unknown error occurred.",
-        });
-      }
-    });
-  };
-
-  const enrichTask = (task: Task) => {
-    const assignees = users.filter(u => (task.assignedToIds || []).includes(u.id));
-    const assigner = users.find(u => u.id === task.assignedById);
-    return {
-      ...task,
-      assignees: assignees.length > 0 ? assignees : [{ id: 'unassigned', name: 'Unassigned', email: '', role: 'Member', team: null, subTeam: null, avatar: '', username: '' }],
-      assignerName: assigner?.name || 'System',
-      assignerAvatar: assigner?.avatar,
-      assignerId: assigner?.id,
-    };
-  };
-
   const filteredAndEnrichedTasks = useMemo(() => {
     if (!visibleTasks) return null;
-    
-    const enriched = visibleTasks.map(enrichTask);
+
+    let filtered = visibleTasks;
 
     switch(currentFilter) {
       case 'active':
-        return enriched.filter(t => t.status === 'To Do' || t.status === 'In Progress');
+        filtered = visibleTasks.filter(t => t.status === 'To Do' || t.status === 'In Progress');
+        break;
       case 'missing':
-        return enriched.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'Done' && t.status !== 'Cancelled');
+        filtered = visibleTasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'Done' && t.status !== 'Cancelled');
+        break;
       case 'done':
-        return enriched.filter(t => t.status === 'Done' || t.status === 'Cancelled');
+        filtered = visibleTasks.filter(t => t.status === 'Done' || t.status === 'Cancelled');
+        break;
       case 'all':
       default:
-        return enriched;
+        filtered = visibleTasks;
+        break;
     }
-  }, [visibleTasks, currentFilter, users]);
+
+    return filtered.map(task => {
+        const assignees = (task.assignedToIds || [])
+            .map(id => userMap.get(id))
+            .filter((u): u is User => !!u);
+        
+        const assigner = userMap.get(task.assignedById);
+
+        return {
+            ...task,
+            assignees: assignees.length > 0 ? assignees : [{ id: 'unassigned', name: 'Unassigned', email: '', role: 'Member' as const, team: null, subTeam: null, avatar: '', username: '' }],
+            assignerName: assigner?.name || 'System',
+            assignerAvatar: assigner?.avatar,
+            assignerId: assigner?.id,
+        }
+    });
+
+  }, [visibleTasks, currentFilter, userMap]);
 
 
   const statusBadgeVariant = {
@@ -144,8 +130,8 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
     return hoursLeft >= 0 && hoursLeft < 24;
   }
 
-  const renderTable = (tasks: (ReturnType<typeof enrichTask>)[], loading: boolean) => {
-    if(loading) {
+  const renderTable = (tasks: typeof filteredAndEnrichedTasks, loading: boolean) => {
+    if(loading || !tasks) {
       return (
         <div className="space-y-2">
             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -163,13 +149,11 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                 <TableHead>Assignees</TableHead>
                 <TableHead>Assigner</TableHead>
                 <TableHead className="hidden md:table-cell">Due Date</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
             </TableRow>
             </TableHeader>
             <TableBody>
             {tasks.map(task => {
                 const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'Done' && task.status !== 'Cancelled';
-                const canDelete = currentUser.id === task.assignerId || currentUser.role === 'Co-founder' || currentUser.role === 'Secretary';
                 return (
                     <TableRow key={task.id} className={cn(isOverdue && 'bg-destructive/20 hover:bg-destructive/30')}>
                         <TableCell className="font-medium">
@@ -264,13 +248,6 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
                             )}
                             </div>
                         </TableCell>
-                        <TableCell className="text-right">
-                          {canDelete && (
-                            <form action={() => handleDelete(task.id)}>
-                              <DeleteTaskButton taskId={task.id} asIcon={true} />
-                            </form>
-                          )}
-                        </TableCell>
                     </TableRow>
                 )
             })}
@@ -291,7 +268,7 @@ export default function TasksClient({ currentUser, users, allTasks: initialTasks
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {renderTable(filteredAndEnrichedTasks || [], filteredAndEnrichedTasks === null)}
+            {renderTable(filteredAndEnrichedTasks, filteredAndEnrichedTasks === null)}
           </CardContent>
         </Card>
       </TabsContent>
