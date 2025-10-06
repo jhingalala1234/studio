@@ -42,7 +42,7 @@ const getUserTitle = (user: User): string => {
     return `Director of ${team}`;
   }
   if (role === 'Lead' && subTeam) {
-    const subTeamName = subTeam.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const subTeamName = subTeam.replace(/-/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     return `Lead of ${subTeamName}`;
   }
   return role;
@@ -59,15 +59,27 @@ export function Header({ user }: { user: User }) {
   const visibleNavItems = navItems.filter(item => item.roles.includes(user.role));
 
   useEffect(() => {
-    const currentHour = new Date().getHours();
-    if (currentHour < 12) {
-      setGreeting({ text: 'Good Morning', punctuation: '!' });
-    } else if (currentHour < 17) {
-      setGreeting({ text: 'Good Afternoon', punctuation: '!' });
-    } else if (currentHour < 21) {
-      setGreeting({ text: 'Good Evening', punctuation: '!' });
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    if (currentHour >= 6 && currentHour < 12) {
+        // 6:00 AM - 11:59 AM
+        setGreeting({ text: 'Good Morning', punctuation: '!' });
+    } else if (currentHour >= 12 && (currentHour < 16 || (currentHour === 16 && currentMinute <= 30))) {
+        // 12:00 PM - 4:30 PM
+        setGreeting({ text: 'Good Afternoon', punctuation: '!' });
+    } else if ((currentHour === 16 && currentMinute > 30) || (currentHour > 16 && currentHour < 21)) {
+        // 4:31 PM - 8:59 PM
+        setGreeting({ text: 'Good Evening', punctuation: '!' });
+    } else if (currentHour >= 21 || currentHour < 4) {
+        // 9:00 PM - 3:59 AM
+        setGreeting({ text: 'Burning the midnight oil', punctuation: '?' });
+    } else if (currentHour >= 4 && currentHour < 6) {
+        // 4:00 AM - 5:59 AM
+        setGreeting({ text: 'Early morning', punctuation: '!' });
     } else {
-      setGreeting({ text: 'Burning the midnight oil', punctuation: '?' });
+        setGreeting({ text: 'Welcome Back', punctuation: '!' });
     }
   }, []);
   
