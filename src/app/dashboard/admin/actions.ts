@@ -65,7 +65,7 @@ export async function updateUser(userData: User) {
   revalidatePath(`/dashboard/users/${id}`);
 }
 
-export async function seedUsers(usersToSeed: User[]): Promise<User[]> {
+export async function seedUsers(usersJson: string): Promise<User[]> {
   const currentUser = await getCurrentUser();
   if (!currentUser) throw new Error('Not authenticated');
 
@@ -77,6 +77,8 @@ export async function seedUsers(usersToSeed: User[]): Promise<User[]> {
   if (!adminDb) {
     throw new Error('Database not initialized.');
   }
+
+  const usersToSeed: User[] = JSON.parse(usersJson);
 
   const usersCollection = adminDb.collection('users');
   
@@ -97,12 +99,19 @@ export async function seedUsers(usersToSeed: User[]): Promise<User[]> {
         continue;
     }
     const docRef = usersCollection.doc(user.id);
-    seedBatch.set(docRef, user);
+    const validatedUser = userSchema.safeParse(user);
+    if (validatedUser.success) {
+      seedBatch.set(docRef, validatedUser.data);
+    } else {
+       console.warn(`Skipping invalid user data for ${user.id}:`, validatedUser.error.flatten());
+    }
   }
   await seedBatch.commit();
   
   revalidatePath('/dashboard/admin');
   revalidatePath('/dashboard/users');
 
-  return usersToSeed;
+  // Return the newly seeded users to update the client state
+  const newUsersSnapshot = await usersCollection.orderBy('name').get();
+  return newUsersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
 }

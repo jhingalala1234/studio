@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { updateUser, seedUsers } from './actions';
+import { seedUsers } from './actions';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Download, Upload } from 'lucide-react';
+import { Download, Upload, PlusCircle, Trash2 } from 'lucide-react';
 import Papa from 'papaparse';
 
 const roles: UserRole[] = ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'];
@@ -44,6 +44,7 @@ const subTeams: (SubTeam | null | string)[] = [
     'digital-design', 'media', null
 ];
 const NONE_VALUE = "__NONE__";
+const userTemplateKeys: (keyof User)[] = ['id', 'name', 'username', 'email', 'password', 'avatar', 'role', 'team', 'subTeam', 'phone', 'birthday', 'linkedin', 'github'];
 
 export default function AdminClient({ users: initialUsers }: { users: User[] }) {
   const [users, setUsers] = useState<User[]>(initialUsers);
@@ -58,33 +59,35 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
       )
     );
   };
+  
+  const handleAddNewUser = () => {
+    const newUser: User = {
+      id: `new-user-${Date.now()}`,
+      name: '',
+      username: '',
+      email: '',
+      password: '',
+      avatar: '',
+      role: 'Member',
+      team: null,
+      subTeam: null,
+      phone: null,
+      birthday: null,
+      linkedin: null,
+      github: null,
+    };
+    setUsers(prev => [newUser, ...prev]);
+  }
 
-  const handleSaveChanges = (userId: string) => {
-    const userToSave = users.find(u => u.id === userId);
-    if (!userToSave) return;
-
-    startTransition(async () => {
-      try {
-        await updateUser(userToSave);
-        toast({
-          title: 'User Updated',
-          description: `${userToSave.name}'s data has been saved.`,
-        });
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: error instanceof Error ? error.message : 'Failed to update user.',
-        });
-        setUsers(initialUsers);
-      }
-    });
-  };
+  const handleDeleteUser = (userId: string) => {
+    setUsers(prev => prev.filter(user => user.id !== userId));
+  }
 
   const handleSeedDatabase = () => {
     startTransition(async () => {
       try {
-        const newUsers = await seedUsers(users);
+        const usersJson = JSON.stringify(users);
+        const newUsers = await seedUsers(usersJson);
         setUsers(newUsers);
         toast({
           title: 'Database Seeded',
@@ -100,13 +103,26 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
     });
   };
 
-  const handleDownloadCsv = () => {
-    const csv = Papa.unparse(users);
+  const handleDownloadCsv = (templateOnly: boolean) => {
+    const data = templateOnly ? [] : users.map(user => {
+      // Ensure all keys are present for consistent CSV structure
+      const userForCsv: Partial<User> = {};
+      userTemplateKeys.forEach(key => {
+        userForCsv[key] = user[key] ?? '';
+      });
+      return userForCsv;
+    });
+
+    const csv = Papa.unparse({
+        fields: userTemplateKeys,
+        data: data as any,
+    });
+
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', 'users_template.csv');
+    link.setAttribute('download', templateOnly ? 'users_template.csv' : 'users_export.csv');
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -120,20 +136,18 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          // Cast user as any temporarily to fix CSV string nulls
-          const parsedUsers = results.data.map((user: any) => ({
-            ...user,
-            team: user.team === 'null' || user.team === '' ? null : user.team,
-            subTeam: user.subTeam === 'null' || user.subTeam === '' ? null : user.subTeam,
-            phone: user.phone === 'null' || user.phone === '' ? null : user.phone,
-            birthday: user.birthday === 'null' || user.birthday === '' ? undefined : user.birthday,
-            linkedin: user.linkedin === 'null' || user.linkedin === '' ? null : user.linkedin,
-            github: user.github === 'null' || user.github === '' ? null : user.github,
-          })) as User[];
+          const parsedUsers = results.data.map((user: any) => {
+            const newUser: any = {};
+            for (const key in user) {
+                const value = user[key];
+                newUser[key] = value === 'null' || value === '' ? null : value;
+            }
+            return newUser as User;
+          });
           setUsers(parsedUsers);
           toast({
-            title: 'CSV Loaded',
-            description: `${parsedUsers.length} users loaded into the table. Click 'Seed Database' to save.`,
+            title: 'CSV Imported',
+            description: `${parsedUsers.length} users loaded into the table. Review and click 'Seed Database' to save.`,
           });
         },
         error: (error) => {
@@ -145,6 +159,9 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
         }
       });
     }
+     if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
   };
 
   const handleUploadClick = () => {
@@ -154,14 +171,22 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
   return (
     <Card className="glass">
       <CardContent className="pt-6">
-        <div className="flex justify-end gap-2 mb-4">
-          <Button variant="outline" onClick={handleDownloadCsv} disabled={isPending}>
+        <div className="flex flex-wrap items-center justify-end gap-2 mb-4">
+           <Button variant="outline" onClick={handleAddNewUser} disabled={isPending}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+          <Button variant="outline" onClick={() => handleDownloadCsv(true)} disabled={isPending}>
             <Download className="mr-2 h-4 w-4" />
-            Download CSV
+            Download Template
+          </Button>
+          <Button variant="outline" onClick={() => handleDownloadCsv(false)} disabled={isPending}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
           </Button>
           <Button variant="outline" onClick={handleUploadClick} disabled={isPending}>
             <Upload className="mr-2 h-4 w-4" />
-            Upload CSV
+            Import CSV
           </Button>
           <input
             type="file"
@@ -180,7 +205,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will delete all existing user data and replace it with the data currently in the table. This action cannot be undone.
+                  This will **delete all existing user data** and replace it with the data currently in the table. This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -194,6 +219,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
@@ -212,6 +238,14 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
             <TableBody>
               {users.map(user => (
                 <TableRow key={user.id}>
+                  <TableCell>
+                     <Input
+                      value={user.id}
+                      onChange={e => handleInputChange(user.id, 'id', e.target.value)}
+                      className="w-40"
+                      placeholder="Unique ID"
+                    />
+                  </TableCell>
                   <TableCell>
                     <Input
                       value={user.name}
@@ -334,8 +368,8 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button onClick={() => handleSaveChanges(user.id)} disabled={isPending}>
-                      {isPending ? 'Saving...' : 'Save'}
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user.id)} disabled={isPending}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
                 </TableRow>
