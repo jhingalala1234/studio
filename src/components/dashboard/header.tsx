@@ -18,7 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTr
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/actions';
 import { Logo } from '@/components/logo';
-import type { User, UserRole, Team } from '@/types';
+import type { User, UserRole, Team, SubTeam } from '@/types';
 import { cn } from '@/lib/utils';
 import { NotificationPopover } from './notification-popover';
 import { useState, useEffect } from 'react';
@@ -36,20 +36,23 @@ const navItems = [
   { href: '/dashboard/logs', label: 'Logs', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
 ];
 
-const getUserTitle = (role: UserRole, team: Team | null): string => {
+const getUserTitle = (user: User): string => {
+  const { role, team, subTeam } = user;
   if (role === 'Chair of Directors' && team) {
     return `Director of ${team}`;
   }
-  if (role === 'Lead' && team) {
-    return `Lead at ${team}`;
+  if (role === 'Lead' && subTeam) {
+    const subTeamName = subTeam.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return `Lead of ${subTeamName}`;
   }
   return role;
 };
 
+
 export function Header({ user }: { user: User }) {
   const userInitials = user.name.split(' ').map((n) => n[0]).join('');
   const pathname = usePathname();
-  const userTitle = getUserTitle(user.role, user.team);
+  const userTitle = getUserTitle(user);
   const [greeting, setGreeting] = useState<{ text: string; punctuation: string }>({ text: 'Welcome Back', punctuation: '!' });
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 

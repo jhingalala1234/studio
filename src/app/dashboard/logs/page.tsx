@@ -10,8 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { getCurrentUser } from '@/lib/auth';
-import type { User, Log, Announcement } from '@/types';
-import { getAllUsers, getAllLogs, getAnnouncements } from '@/lib/data';
+import type { User, Log } from '@/types';
+import { getAllUsers, getAllLogs } from '@/lib/data';
 import { getSubordinates } from '@/lib/hierarchy';
 
 
