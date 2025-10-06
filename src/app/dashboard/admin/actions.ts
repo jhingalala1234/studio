@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -11,9 +12,9 @@ const userSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email'),
   username: z.string().min(1, 'Username is required'),
-  avatar: z.string().url().or(z.literal('')).optional().nullable(),
   password: z.string().min(1, 'Password is required'),
   role: z.enum(['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member']),
+  avatar: z.string().url().or(z.literal('')).optional().nullable(),
   team: z.enum(['Technology', 'Corporate', 'Creatives', 'Presidium']).optional().nullable(),
   subTeam: z
     .enum([
@@ -78,14 +79,20 @@ export async function seedUsers(usersJson: string): Promise<User[]> {
     throw new Error('Database not initialized.');
   }
 
-  const usersToSeed: User[] = JSON.parse(usersJson);
+  let usersToSeed: User[];
+  try {
+    usersToSeed = JSON.parse(usersJson);
+  } catch (e) {
+    throw new Error("Invalid JSON data provided for seeding.");
+  }
   
   for (const user of usersToSeed) {
     const validation = userSchema.safeParse(user);
     if (!validation.success) {
       const fieldErrors = validation.error.flatten().fieldErrors;
-      const firstError = Object.values(fieldErrors)[0]?.[0];
-      throw new Error(`Validation failed for user ${user.name || user.id}: ${firstError || 'Invalid data.'}`);
+      const firstErrorKey = Object.keys(fieldErrors)[0];
+      const firstErrorMessage = fieldErrors[firstErrorKey]?.[0];
+      throw new Error(`Validation failed for user ${user.name || user.id}: ${firstErrorKey} - ${firstErrorMessage || 'Invalid data.'}`);
     }
   }
 
@@ -93,11 +100,11 @@ export async function seedUsers(usersJson: string): Promise<User[]> {
   
   // Delete all existing users
   const snapshot = await usersCollection.get();
-  const batch = adminDb.batch();
+  const deleteBatch = adminDb.batch();
   snapshot.docs.forEach(doc => {
-    batch.delete(doc.ref);
+    deleteBatch.delete(doc.ref);
   });
-  await batch.commit();
+  await deleteBatch.commit();
 
   // Seed new users
   const seedBatch = adminDb.batch();

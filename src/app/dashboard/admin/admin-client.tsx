@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useRef } from 'react';
@@ -52,6 +53,18 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const getNextUserId = () => {
+    const existingIds = users.map(u => {
+        if (u.id.startsWith('user-')) {
+            const num = parseInt(u.id.split('-')[1], 10);
+            return isNaN(num) ? 0 : num;
+        }
+        return 0;
+    });
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+    return `user-${maxId + 1}`;
+  };
+
   const handleInputChange = (userId: string, field: keyof User, value: string | null) => {
     setUsers(prevUsers =>
       prevUsers.map(user =>
@@ -62,7 +75,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
   
   const handleAddNewUser = () => {
     const newUser: User = {
-      id: `new-user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      id: getNextUserId(),
       name: '',
       username: '',
       email: '',
@@ -136,20 +149,26 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
+            let nextIdNumber = users.reduce((max, u) => {
+                if (u.id.startsWith('user-')) {
+                    const num = parseInt(u.id.split('-')[1], 10);
+                    return isNaN(num) ? max : Math.max(max, num);
+                }
+                return max;
+            }, 0) + 1;
+
           const parsedUsers = results.data.map((user: any) => {
             const newUser: any = {};
             for (const key in user) {
                 const value = user[key];
-                // Ensure ID is a string, generate if missing
-                if (key === 'id' && !value) {
-                  newUser[key] = `imported-user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-                } else {
-                  newUser[key] = value === 'null' || value === '' ? null : value;
-                }
+                newUser[key] = value === 'null' || value === '' ? null : value;
+            }
+            if (!newUser.id || !newUser.id.startsWith('user-')) {
+                newUser.id = `user-${nextIdNumber++}`;
             }
             return newUser as User;
           });
-          setUsers(parsedUsers);
+          setUsers(prev => [...prev, ...parsedUsers]);
           toast({
             title: 'CSV Imported',
             description: `${parsedUsers.length} users loaded into the table. Review and click 'Seed Database' to save.`,
@@ -224,6 +243,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
@@ -242,6 +262,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
             <TableBody>
               {users.map(user => (
                 <TableRow key={user.id}>
+                  <TableCell className="w-28 text-muted-foreground">{user.id}</TableCell>
                   <TableCell>
                     <Input
                       value={user.name || ''}
