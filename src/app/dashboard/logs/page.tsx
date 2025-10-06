@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -82,7 +83,7 @@ export default async function LogsPage() {
               <div key={log.id}>
                 <div className="flex items-start gap-4 p-4">
                     <Avatar className="h-10 w-10">
-                    <AvatarImage src={log.userAvatar} alt={log.userName} />
+                    <AvatarImage src={log.userAvatar ?? undefined} alt={log.userName} />
                     <AvatarFallback>
                         {log.userName.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>

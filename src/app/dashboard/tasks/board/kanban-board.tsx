@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useTransition, useEffect } from 'react';
@@ -15,7 +16,7 @@ import { getSubordinates } from '@/lib/hierarchy';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
-type AssigneeInfo = { name: string; avatar?: string };
+type AssigneeInfo = { name: string; avatar?: string | null };
 
 type EnrichedTask = Task & { 
     assignees: AssigneeInfo[];

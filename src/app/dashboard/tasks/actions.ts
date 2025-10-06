@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from "zod";
@@ -331,35 +332,50 @@ export async function deleteTask(taskId: string) {
   }
 
   try {
-    await taskRef.delete();
-    console.log(`Successfully deleted task with ID: ${taskId}`);
-
     const logMessage = `${currentUser.name} deleted the task "${task?.title}".`;
-    await adminDb.collection('logs').add({
+    
+    // Batch delete operations for atomicity
+    const batch = adminDb.batch();
+
+    // 1. Delete the task itself
+    batch.delete(taskRef);
+
+    // 2. Add log entry
+    const logRef = adminDb.collection('logs').doc();
+    batch.set(logRef, {
       message: logMessage,
       timestamp: new Date().toISOString(),
       userId: currentUser.id,
-      // TaskId is not added here as the task is deleted
     });
 
+    // 3. Commit task deletion and logging
+    await batch.commit();
+    console.log(`Successfully deleted task with ID: ${taskId} and created log entry.`);
+
+    // 4. Concurrently delete associated sub-collections
     const collectionsToDelete = ['comments', 'subtasks', 'notifications'];
-    for (const collection of collectionsToDelete) {
-      const snapshot = await adminDb.collection(collection).where("taskId", "==", taskId).get();
-      if (!snapshot.empty) {
-        const batch = adminDb.batch();
-        snapshot.docs.forEach(doc => {
-          batch.delete(doc.ref);
-        });
-        await batch.commit();
-        console.log(`Deleted ${snapshot.size} associated documents from ${collection}.`);
-      }
-    }
+    await Promise.all(collectionsToDelete.map(async (collection) => {
+        const snapshot = await adminDb.collection(collection).where("taskId", "==", taskId).get();
+        if (!snapshot.empty) {
+            const deleteBatch = adminDb.batch();
+            snapshot.docs.forEach(doc => {
+                deleteBatch.delete(doc.ref);
+            });
+            await deleteBatch.commit();
+            console.log(`Deleted ${snapshot.size} associated documents from ${collection}.`);
+        }
+    }));
+
   } catch (error) {
-    console.error("Failed to delete task:", error);
-    if (error instanceof Error && !error.message.includes('NEXT_REDIRECT')) {
-      throw new Error(error.message);
+    console.error("Failed to delete task and its sub-collections:", error);
+    if (error instanceof Error) {
+        // Don't re-throw redirect errors
+        if (!error.message.includes('NEXT_REDIRECT')) {
+            throw error;
+        }
+    } else {
+        throw new Error("An unknown error occurred while deleting the task.");
     }
-    throw new Error("An unknown error occurred while deleting the task.");
   }
 
   revalidatePath("/dashboard/tasks");
@@ -367,6 +383,7 @@ export async function deleteTask(taskId: string) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/my-week");
   revalidatePath("/dashboard/tasks/board");
+  // The redirect will now happen in the client component
 }
 
 const updateStatusSchema = z.object({
