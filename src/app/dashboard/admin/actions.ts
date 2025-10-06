@@ -11,16 +11,16 @@ const userSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email'),
   username: z.string().min(1, 'Username is required'),
-  avatar: z.string().url().or(z.literal('')),
+  avatar: z.string().url().or(z.literal('')).optional().nullable(),
   password: z.string().min(1, 'Password is required'),
   role: z.enum(['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member']),
-  team: z.enum(['Technology', 'Corporate', 'Creatives', 'Presidium']).nullable(),
+  team: z.enum(['Technology', 'Corporate', 'Creatives', 'Presidium']).optional().nullable(),
   subTeam: z
     .enum([
       'dev', 'ui-ux', 'aiml', 'cloud', 'iot', 'events', 'ops', 'pr',
       'sponsorship', 'digital-design', 'media',
     ])
-    .nullable(),
+    .optional().nullable(),
   phone: z.string().optional().nullable(),
   birthday: z.string().optional().nullable(),
   linkedin: z.string().url().or(z.literal('')).optional().nullable(),
@@ -79,6 +79,15 @@ export async function seedUsers(usersJson: string): Promise<User[]> {
   }
 
   const usersToSeed: User[] = JSON.parse(usersJson);
+  
+  for (const user of usersToSeed) {
+    const validation = userSchema.safeParse(user);
+    if (!validation.success) {
+      const fieldErrors = validation.error.flatten().fieldErrors;
+      const firstError = Object.values(fieldErrors)[0]?.[0];
+      throw new Error(`Validation failed for user ${user.name || user.id}: ${firstError || 'Invalid data.'}`);
+    }
+  }
 
   const usersCollection = adminDb.collection('users');
   

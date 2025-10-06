@@ -62,7 +62,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
   
   const handleAddNewUser = () => {
     const newUser: User = {
-      id: `new-user-${Date.now()}`,
+      id: `new-user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       name: '',
       username: '',
       email: '',
@@ -96,8 +96,8 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
       } catch (error) {
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: error instanceof Error ? error.message : 'Failed to seed database.',
+          title: 'Error Seeding Database',
+          description: error instanceof Error ? error.message : 'An unknown error occurred.',
         });
       }
     });
@@ -140,7 +140,12 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
             const newUser: any = {};
             for (const key in user) {
                 const value = user[key];
-                newUser[key] = value === 'null' || value === '' ? null : value;
+                // Ensure ID is a string, generate if missing
+                if (key === 'id' && !value) {
+                  newUser[key] = `imported-user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                } else {
+                  newUser[key] = value === 'null' || value === '' ? null : value;
+                }
             }
             return newUser as User;
           });
@@ -219,7 +224,6 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
@@ -239,33 +243,28 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
               {users.map(user => (
                 <TableRow key={user.id}>
                   <TableCell>
-                     <Input
-                      value={user.id}
-                      onChange={e => handleInputChange(user.id, 'id', e.target.value)}
-                      className="w-40"
-                      placeholder="Unique ID"
-                    />
-                  </TableCell>
-                  <TableCell>
                     <Input
-                      value={user.name}
+                      value={user.name || ''}
                       onChange={e => handleInputChange(user.id, 'name', e.target.value)}
                       className="w-40"
+                      placeholder="Full Name"
                     />
                   </TableCell>
                   <TableCell>
                     <Input
-                      value={user.username}
+                      value={user.username || ''}
                       onChange={e => handleInputChange(user.id, 'username', e.target.value)}
                       className="w-40"
+                       placeholder="Username"
                     />
                   </TableCell>
                   <TableCell>
                     <Input
                       type="email"
-                      value={user.email}
+                      value={user.email || ''}
                       onChange={e => handleInputChange(user.id, 'email', e.target.value)}
                       className="w-48"
+                       placeholder="Email Address"
                     />
                   </TableCell>
                   <TableCell>
@@ -273,7 +272,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       value={user.password || ''}
                       onChange={e => handleInputChange(user.id, 'password', e.target.value)}
                       className="w-40"
-                      placeholder="New Password"
+                      placeholder="Required"
                     />
                   </TableCell>
                   <TableCell>
@@ -281,7 +280,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       value={user.avatar || ''}
                       onChange={e => handleInputChange(user.id, 'avatar', e.target.value)}
                       className="w-48"
-                      placeholder="Avatar Image URL"
+                      placeholder="Avatar Image URL (Optional)"
                     />
                   </TableCell>
                   <TableCell>
@@ -311,7 +310,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       </SelectTrigger>
                       <SelectContent>
                         {teams.map(team => (
-                          <SelectItem key={team || 'null'} value={team || NONE_VALUE}>
+                          <SelectItem key={team ?? 'null'} value={team || NONE_VALUE}>
                             {team || 'None'}
                           </SelectItem>
                         ))}
@@ -328,7 +327,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       </SelectTrigger>
                       <SelectContent>
                         {subTeams.map(subTeam => (
-                          <SelectItem key={subTeam || 'null'} value={subTeam || NONE_VALUE}>
+                          <SelectItem key={subTeam ?? 'null'} value={subTeam || NONE_VALUE}>
                             {subTeam || 'None'}
                           </SelectItem>
                         ))}
