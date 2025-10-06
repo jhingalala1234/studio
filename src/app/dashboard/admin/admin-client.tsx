@@ -55,7 +55,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
 
   const getNextUserId = () => {
     const existingIds = users.map(u => {
-        if (u.id.startsWith('user-')) {
+        if (u.id && u.id.startsWith('user-')) {
             const num = parseInt(u.id.split('-')[1], 10);
             return isNaN(num) ? 0 : num;
         }
@@ -118,7 +118,6 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
 
   const handleDownloadCsv = (templateOnly: boolean) => {
     const data = templateOnly ? [] : users.map(user => {
-      // Ensure all keys are present for consistent CSV structure
       const userForCsv: Partial<User> = {};
       userTemplateKeys.forEach(key => {
         userForCsv[key] = user[key] ?? '';
@@ -150,7 +149,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
         skipEmptyLines: true,
         complete: (results) => {
             let nextIdNumber = users.reduce((max, u) => {
-                if (u.id.startsWith('user-')) {
+                if (u.id && u.id.startsWith('user-')) {
                     const num = parseInt(u.id.split('-')[1], 10);
                     return isNaN(num) ? max : Math.max(max, num);
                 }
@@ -348,7 +347,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       </SelectTrigger>
                       <SelectContent>
                         {subTeams.map(subTeam => (
-                          <SelectItem key={subTeam ?? 'null'} value={subTeam || NONE_VALUE}>
+                          <SelectItem key={subTeam ?? 'null-subteam'} value={subTeam || NONE_VALUE}>
                             {subTeam || 'None'}
                           </SelectItem>
                         ))}
