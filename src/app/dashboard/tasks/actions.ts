@@ -333,43 +333,40 @@ export async function deleteTask(taskId: string) {
 
   try {
     const logMessage = `${currentUser.name} deleted the task "${task?.title}".`;
-    
-    // Batch delete operations for atomicity
     const batch = adminDb.batch();
 
-    // 1. Delete the task itself
+    // 1. Fetch all related documents to delete
+    const collectionsToDelete = ['comments', 'subtasks', 'notifications'];
+    const snapshots = await Promise.all(
+      collectionsToDelete.map(collection => 
+        adminDb.collection(collection).where("taskId", "==", taskId).get()
+      )
+    );
+
+    // 2. Add all documents to the batch for deletion
+    snapshots.forEach(snapshot => {
+      snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    });
+
+    // 3. Add the main task to the batch for deletion
     batch.delete(taskRef);
 
-    // 2. Add log entry
+    // 4. Add the log entry to the batch
     const logRef = adminDb.collection('logs').doc();
     batch.set(logRef, {
       message: logMessage,
       timestamp: new Date().toISOString(),
       userId: currentUser.id,
+      // No taskId since the task is being deleted
     });
 
-    // 3. Commit task deletion and logging
+    // 5. Commit the atomic batch operation
     await batch.commit();
-    console.log(`Successfully deleted task with ID: ${taskId} and created log entry.`);
-
-    // 4. Concurrently delete associated sub-collections
-    const collectionsToDelete = ['comments', 'subtasks', 'notifications'];
-    await Promise.all(collectionsToDelete.map(async (collection) => {
-        const snapshot = await adminDb.collection(collection).where("taskId", "==", taskId).get();
-        if (!snapshot.empty) {
-            const deleteBatch = adminDb.batch();
-            snapshot.docs.forEach(doc => {
-                deleteBatch.delete(doc.ref);
-            });
-            await deleteBatch.commit();
-            console.log(`Deleted ${snapshot.size} associated documents from ${collection}.`);
-        }
-    }));
+    console.log(`Successfully deleted task ${taskId} and all associated data.`);
 
   } catch (error) {
     console.error("Failed to delete task and its sub-collections:", error);
     if (error instanceof Error) {
-        // Don't re-throw redirect errors
         if (!error.message.includes('NEXT_REDIRECT')) {
             throw error;
         }
