@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Search, Users, CalendarCheck, GanttChartSquare, FilePlus, Rss, Shield } from 'lucide-react';
+import { Menu, Search, Users, CalendarCheck, GanttChartSquare, FilePlus, Rss, Shield, ActivityLog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -33,7 +33,7 @@ const navItems = [
   { href: '/dashboard/announcements', label: 'Announcements', icon: Rss, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/users', label: 'Users', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/admin', label: 'Admin', icon: Shield, roles: ['Co-founder', 'Secretary', 'Chair of Directors'] },
-  { href: '/dashboard/logs', label: 'Logs', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
+  { href: '/dashboard/logs', label: 'Logs', icon: ActivityLog, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
 ];
 
 const getUserTitle = (user: User): string => {
@@ -43,7 +43,7 @@ const getUserTitle = (user: User): string => {
   }
   if (role === 'Lead' && subTeam) {
     const subTeamName = subTeam.replace(/-/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    return `Lead of ${subTeamName}`;
+    return `${subTeamName} Lead`;
   }
   return role;
 };
@@ -77,7 +77,7 @@ export function Header({ user }: { user: User }) {
         setGreeting({ text: 'Burning the midnight oil', punctuation: '?' });
     } else if (currentHour >= 4 && currentHour < 6) {
         // 4:00 AM - 5:59 AM
-        setGreeting({ text: 'Early morning', punctuation: '!' });
+        setGreeting({ text: 'Rise and shine', punctuation: '!' });
     } else {
         setGreeting({ text: 'Welcome Back', punctuation: '!' });
     }
