@@ -32,6 +32,10 @@ export async function updateUser(userData: User) {
   const currentUser = await getCurrentUser();
   if (!currentUser) throw new Error('Not authenticated');
 
+  if (!adminDb) {
+    throw new Error('Database not initialized.');
+  }
+
   const authorizedRoles: (string | undefined)[] = ['Co-founder', 'Secretary', 'Chair of Directors'];
   if (!authorizedRoles.includes(currentUser.role)) {
     throw new Error('Not authorized');
@@ -55,10 +59,6 @@ export async function updateUser(userData: User) {
       github: dataToUpdate.github || null,
   };
 
-  if (!adminDb) {
-    throw new Error('Database not initialized.');
-  }
-
   await adminDb.collection('users').doc(id).update(processedData);
 
   revalidatePath('/dashboard/admin');
@@ -70,13 +70,13 @@ export async function seedUsers(usersJson: string): Promise<User[]> {
   const currentUser = await getCurrentUser();
   if (!currentUser) throw new Error('Not authenticated');
 
+  if (!adminDb) {
+    throw new Error('Database not initialized.');
+  }
+
   const authorizedRoles: (string | undefined)[] = ['Co-founder', 'Secretary', 'Chair of Directors'];
   if (!authorizedRoles.includes(currentUser.role)) {
     throw new Error('Not authorized');
-  }
-
-  if (!adminDb) {
-    throw new Error('Database not initialized.');
   }
 
   let usersToSeed: User[];

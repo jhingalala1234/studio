@@ -46,6 +46,9 @@ export async function addBulkIndividualTasks(data: FormData) {
   if (!currentUser) {
     throw new Error("You must be logged in to add tasks.");
   }
+  if (!adminDb) {
+    throw new Error('Database not initialized.');
+  }
 
   const rawData = {
     title: data.get('title') || '',
@@ -64,10 +67,6 @@ export async function addBulkIndividualTasks(data: FormData) {
 
   const { title, description, assignedToIds, dueDate, links } = validatedFields.data;
   const isUrgent = differenceInHours(dueDate, new Date()) < 30;
-
-  if (!adminDb) {
-    throw new Error('Database not initialized.');
-  }
 
   const batch = adminDb.batch();
   const tasksCollection = adminDb.collection("tasks");
@@ -138,6 +137,9 @@ export async function addTask(data: FormData) {
   if (!currentUser) {
     throw new Error("You must be logged in to add a task.");
   }
+  if (!adminDb) {
+    throw new Error('Database not initialized.');
+  }
 
   if (currentUser.role === 'Member' && (data.getAll('assignedToIds[]') as string[]).some(id => id !== currentUser.id)) {
     throw new Error("You can only assign tasks to yourself.");
@@ -162,10 +164,6 @@ export async function addTask(data: FormData) {
     const { title, description, assignedToIds, dueDate, links } = validatedFields.data;
 
     const isUrgent = differenceInHours(dueDate, new Date()) < 30;
-
-    if (!adminDb) {
-      throw new Error('Database not initialized.');
-    }
 
     const newTask = {
       title,
@@ -231,7 +229,6 @@ export async function updateTask(taskId: string, data: FormData) {
   if (!currentUser) {
     throw new Error("You must be logged in to edit a task.");
   }
-
   if (!adminDb) {
     throw new Error('Database not initialized.');
   }
@@ -310,7 +307,6 @@ export async function deleteTask(taskId: string) {
   if (!currentUser) {
     throw new Error("You must be logged in to delete a task.");
   }
-
   if (!adminDb) {
     throw new Error('Database not initialized.');
   }
@@ -398,6 +394,9 @@ export async function updateTaskStatus(formData: FormData) {
   if (!currentUser) {
     throw new Error("You must be logged in.");
   }
+  if (!adminDb) {
+    throw new Error('Database not initialized.');
+  }
 
   const validatedFields = updateStatusSchema.safeParse({
     taskId: formData.get('taskId'),
@@ -409,10 +408,6 @@ export async function updateTaskStatus(formData: FormData) {
   }
 
   const { taskId, status } = validatedFields.data;
-
-  if (!adminDb) {
-    throw new Error('Database not initialized.');
-  }
 
   const taskRef = adminDb.collection("tasks").doc(taskId);
   const taskDoc = await taskRef.get();
@@ -488,6 +483,9 @@ export async function addLink(formData: FormData) {
   if (!currentUser) {
     throw new Error("You must be logged in.");
   }
+  if (!adminDb) {
+    throw new Error('Database not initialized.');
+  }
 
   const validatedFields = addLinkSchema.safeParse({
     taskId: formData.get('taskId'),
@@ -500,10 +498,6 @@ export async function addLink(formData: FormData) {
   }
 
   const { taskId, link } = validatedFields.data;
-
-  if (!adminDb) {
-    throw new Error('Database not initialized.');
-  }
 
   const taskRef = adminDb.collection("tasks").doc(taskId);
   const taskDoc = await taskRef.get();
@@ -550,6 +544,9 @@ export async function addComment(formData: FormData) {
   if (!currentUser) {
     throw new Error("You must be logged in.");
   }
+  if (!adminDb) {
+    throw new Error('Database not initialized.');
+  }
 
   const validatedFields = addCommentSchema.safeParse({
     taskId: formData.get('taskId'),
@@ -561,10 +558,6 @@ export async function addComment(formData: FormData) {
   }
 
   const { taskId, comment } = validatedFields.data;
-
-  if (!adminDb) {
-    throw new Error('Database not initialized.');
-  }
 
   const taskRef = adminDb.collection("tasks").doc(taskId);
   const taskDoc = await taskRef.get();

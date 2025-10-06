@@ -33,7 +33,6 @@ export default async function LogsPage() {
     const visibleUserIds = new Set([currentUser.id, ...subordinateIds]);
 
     const visibleLogs = allLogs.filter(log => {
-      // A user can see any log created by themself or their subordinates.
       return visibleUserIds.has(log.userId);
     });
 
@@ -69,7 +68,7 @@ export default async function LogsPage() {
               <div key={log.id}>
                 <div className="flex items-start gap-4 p-4">
                     <Avatar className="h-10 w-10">
-                    <AvatarImage src={log.userAvatar ?? undefined} alt={log.userName} />
+                    <AvatarImage src={log.userAvatar} alt={log.userName} />
                     <AvatarFallback>
                         {log.userName.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
@@ -98,4 +97,3 @@ export default async function LogsPage() {
     </Card>
   );
 }
-
