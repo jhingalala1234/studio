@@ -127,7 +127,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
 
     const csv = Papa.unparse({
         fields: userTemplateKeys,
-        data: data as any,
+        data: data as any[],
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -297,7 +297,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                   </TableCell>
                   <TableCell>
                     <Input
-                      value={user.avatar || ''}
+                      value={user.avatar ?? ''}
                       onChange={e => handleInputChange(user.id, 'avatar', e.target.value)}
                       className="w-48"
                       placeholder="Avatar Image URL (Optional)"

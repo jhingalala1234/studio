@@ -332,10 +332,7 @@ export async function deleteTask(taskId: string) {
 
     const batch = adminDb.batch();
 
-    // 1. Fetch all related documents to delete
     const collectionsToDelete = ['comments', 'subtasks', 'notifications'];
-    
-    if (!adminDb) throw new Error('Database not initialized.');
     
     const snapshots = await Promise.all(
       collectionsToDelete.map(collection => 
@@ -343,24 +340,19 @@ export async function deleteTask(taskId: string) {
       )
     );
 
-    // 2. Add all documents to the batch for deletion
     snapshots.forEach(snapshot => {
       snapshot.docs.forEach(doc => batch.delete(doc.ref));
     });
 
-    // 3. Add the main task to the batch for deletion
     batch.delete(taskRef);
 
-    // 4. Add the log entry to the batch
     const logRef = adminDb.collection('logs').doc();
     batch.set(logRef, {
       message: logMessage,
       timestamp: new Date().toISOString(),
       userId: currentUser.id,
-      // No taskId since the task is being deleted
     });
 
-    // 5. Commit the atomic batch operation
     await batch.commit();
     console.log(`Successfully deleted task ${taskId} and all associated data.`);
 
@@ -376,11 +368,10 @@ export async function deleteTask(taskId: string) {
   }
 
   revalidatePath("/dashboard/tasks");
-  revalidatePath("/dashboard/logs");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/my-week");
   revalidatePath("/dashboard/tasks/board");
-  // The redirect will now happen in the client component
+  revalidatePath("/dashboard/logs");
 }
 
 const updateStatusSchema = z.object({
@@ -445,7 +436,6 @@ export async function updateTaskStatus(formData: FormData) {
       );
     }
 
-    // If task is done or cancelled, remove all notifications for it.
     if (status === 'Done' || status === 'Cancelled') {
       const notificationsSnapshot = await adminDb.collection('notifications').where('taskId', '==', taskId).get();
       if (!notificationsSnapshot.empty) {

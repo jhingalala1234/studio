@@ -37,13 +37,6 @@ export default async function LogsPage() {
         if (visibleUserIds.has(log.userId)) {
             return true;
         }
-        
-        // This is a simplified fallback for now.
-        // For example, you might want to show org-wide announcement logs to everyone.
-        // A more robust system would require linking logs to entities and checking entity visibility.
-        if (log.message.includes("New announcement posted")) {
-           return true;
-        }
 
         // Default to not showing the log if no rule matches
         return false;
