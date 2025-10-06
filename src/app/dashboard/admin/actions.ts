@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase-admin';
 import { getCurrentUser } from '@/lib/auth';
-import type { User, UserRole, Team } from '@/types';
+import type { User, UserRole, Team, SubTeam } from '@/types';
 
 const userSchema = z.object({
   id: z.string().min(1, "ID is required"),

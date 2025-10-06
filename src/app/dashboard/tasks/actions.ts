@@ -335,7 +335,6 @@ export async function deleteTask(taskId: string) {
     // 1. Fetch all related documents to delete
     const collectionsToDelete = ['comments', 'subtasks', 'notifications'];
     
-    // Add null check before this block
     if (!adminDb) throw new Error('Database not initialized.');
     
     const snapshots = await Promise.all(

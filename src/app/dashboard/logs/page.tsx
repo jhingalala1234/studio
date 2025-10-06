@@ -10,8 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { getCurrentUser } from '@/lib/auth';
-import type { User, Log } from '@/types';
-import { getAllUsers, getAllLogs } from '@/lib/data';
+import type { User, Log, Announcement } from '@/types';
+import { getAllUsers, getAllLogs, getAnnouncements } from '@/lib/data';
 import { getSubordinates } from '@/lib/hierarchy';
 
 
@@ -21,19 +21,32 @@ export default async function LogsPage() {
 
   const users = await getAllUsers();
   const allLogs = await getAllLogs();
-
+  
   const getVisibleLogs = async (): Promise<Log[]> => {
     const userRole = currentUser.role;
 
     if (userRole === 'Co-founder' || userRole === 'Secretary') {
       return allLogs;
     }
-
+    
     const subordinateIds = await getSubordinates(currentUser.id, users);
     const visibleUserIds = new Set([currentUser.id, ...subordinateIds]);
 
     const visibleLogs = allLogs.filter(log => {
-      return visibleUserIds.has(log.userId);
+        // Show logs for actions taken by the user or their subordinates
+        if (visibleUserIds.has(log.userId)) {
+            return true;
+        }
+        
+        // This is a simplified fallback for now.
+        // For example, you might want to show org-wide announcement logs to everyone.
+        // A more robust system would require linking logs to entities and checking entity visibility.
+        if (log.message.includes("New announcement posted")) {
+           return true;
+        }
+
+        // Default to not showing the log if no rule matches
+        return false;
     });
 
     return visibleLogs;
@@ -48,7 +61,7 @@ export default async function LogsPage() {
       return {
         ...log,
         userName: user?.name || 'System',
-        userAvatar: user?.avatar ?? undefined,
+        userAvatar: user?.avatar,
       };
     })
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -68,7 +81,7 @@ export default async function LogsPage() {
               <div key={log.id}>
                 <div className="flex items-start gap-4 p-4">
                     <Avatar className="h-10 w-10">
-                    <AvatarImage src={log.userAvatar} alt={log.userName} />
+                    <AvatarImage src={log.userAvatar ?? undefined} alt={log.userName} />
                     <AvatarFallback>
                         {log.userName.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
