@@ -333,6 +333,9 @@ export async function deleteTask(taskId: string) {
 
   try {
     const logMessage = `${currentUser.name} deleted the task "${task?.title}".`;
+    if (!adminDb) {
+      throw new Error('Database not initialized.');
+    }
     const batch = adminDb.batch();
 
     // 1. Fetch all related documents to delete
