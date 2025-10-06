@@ -10,8 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { getCurrentUser } from '@/lib/auth';
-import type { User, Log, Task } from '@/types';
-import { getAllUsers, getAllTasks, getAllLogs, getAnnouncements } from '@/lib/data';
+import type { User, Log } from '@/types';
+import { getAllUsers, getAllLogs } from '@/lib/data';
 import { getSubordinates } from '@/lib/hierarchy';
 
 
@@ -21,7 +21,6 @@ export default async function LogsPage() {
 
   const users = await getAllUsers();
   const allLogs = await getAllLogs();
-  const announcements = await getAnnouncements();
 
   const getVisibleLogs = async (): Promise<Log[]> => {
     const userRole = currentUser.role;
@@ -33,39 +32,9 @@ export default async function LogsPage() {
     const subordinateIds = await getSubordinates(currentUser.id, users);
     const visibleUserIds = new Set([currentUser.id, ...subordinateIds]);
 
-    // Create a set of announcement IDs visible to the current user
-    const visibleAnnouncementIds = new Set(
-      announcements
-        .filter(ann => {
-          if (!ann.targetDomains || ann.targetDomains.length === 0) return true;
-          return currentUser.team && ann.targetDomains.includes(currentUser.team);
-        })
-        .map(ann => ann.id)
-    );
-
     const visibleLogs = allLogs.filter(log => {
-      // Rule 1: Log was created by the user or their subordinates.
-      if (visibleUserIds.has(log.userId)) {
-        return true;
-      }
-
-      // Rule 2: Handle logs related to announcements.
-      // A simple check is to see if the message contains "announcement".
-      // A more robust way might be to link logs to announcements via an ID.
-      if (log.message.toLowerCase().includes('announcement')) {
-         // This is a broad rule. For now, we assume if an announcement log exists,
-         // it's from leadership and is broadly visible.
-         // A better implementation would be to link the log to the announcement ID
-         // and check against `visibleAnnouncementIds`.
-         // Given the current structure, we allow it if the actor is visible.
-         return true;
-      }
-
-      // Rule 3: For other logs not created by the user/subordinates (e.g., status updates on their tasks)
-      // This part is tricky and was the source of previous bugs.
-      // Let's stick to a strict hierarchy: only show logs from the user's management chain.
-      // If a log actor is not in the visibleUserIds set, we hide it, unless it's a broad announcement.
-      return false;
+      // A user can see any log created by themself or their subordinates.
+      return visibleUserIds.has(log.userId);
     });
 
     return visibleLogs;
@@ -129,3 +98,4 @@ export default async function LogsPage() {
     </Card>
   );
 }
+

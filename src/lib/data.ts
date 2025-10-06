@@ -129,4 +129,3 @@ export const getPollVotesForAnnouncements = cache(async (announcementIds: string
     const votesSnapshot = await adminDb.collection('pollVotes').where('announcementId', 'in', announcementIds).get();
     return votesSnapshot.docs.map(doc => ({ ...doc.data() } as PollVote));
 });
-

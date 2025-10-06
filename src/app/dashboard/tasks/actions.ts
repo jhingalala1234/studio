@@ -333,13 +333,15 @@ export async function deleteTask(taskId: string) {
 
   try {
     const logMessage = `${currentUser.name} deleted the task "${task?.title}".`;
-    if (!adminDb) {
-      throw new Error('Database not initialized.');
-    }
+
     const batch = adminDb.batch();
 
     // 1. Fetch all related documents to delete
     const collectionsToDelete = ['comments', 'subtasks', 'notifications'];
+    
+    // Add null check before this block
+    if (!adminDb) throw new Error('Database not initialized.');
+    
     const snapshots = await Promise.all(
       collectionsToDelete.map(collection => 
         adminDb.collection(collection).where("taskId", "==", taskId).get()
@@ -646,7 +648,11 @@ export async function toggleSubtask(subtaskId: string, isCompleted: boolean) {
   // Add permission check if needed
   await subtaskRef.update({ isCompleted });
 
-  revalidatePath(`/dashboard/tasks/${(await subtaskRef.get()).data()?.taskId}`);
+  const subtaskDoc = await subtaskRef.get();
+  const subtaskData = subtaskDoc.data();
+  if (subtaskData?.taskId) {
+    revalidatePath(`/dashboard/tasks/${subtaskData.taskId}`);
+  }
 }
 
 export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[]) {
@@ -663,9 +669,6 @@ export async function updateSubtaskOrder(taskId: string, subtaskOrder: string[])
 
   const batch = adminDb.batch();
   subtaskOrder.forEach((subtaskId, index) => {
-    if (!adminDb) {
-          throw new Error('Database not initialized.');
-    }
     const subtaskRef = adminDb.collection('subtasks').doc(subtaskId);
     batch.update(subtaskRef, { order: index });
   });
