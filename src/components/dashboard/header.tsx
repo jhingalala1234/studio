@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Menu, Search, Users, CalendarCheck, FilePlus, Rss, Shield, Activity, Rows, LayoutGrid, File } from 'lucide-react';
+import { Menu, Search, Users, CalendarCheck, FilePlus, Rss, Shield, Activity, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -22,22 +22,13 @@ import { cn } from '@/lib/utils';
 import { NotificationPopover } from './notification-popover';
 import { useState, useEffect } from 'react';
 import { useDebounce } from 'use-debounce';
-import AddTaskDialog from '@/app/dashboard/tasks/add-task-dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/tasks', label: 'Tasks', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/my-week', label: 'My Week', icon: CalendarCheck, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/generate-tasks', label: 'Generate Tasks', icon: FilePlus, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead'] },
+  { href: '/dashboard/tracker', label: 'Tracker', icon: ListChecks, roles: ['Co-founder', 'Secretary', 'Chair of Directors'] },
   { href: '/dashboard/announcements', label: 'Announcements', icon: Rss, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/users', label: 'Users', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/admin', label: 'Admin', icon: Shield, roles: ['Co-founder', 'Secretary', 'Chair of Directors'] },
@@ -113,7 +104,7 @@ export function Header({ user }: { user: User }) {
     if (searchValue !== newSearchQuery) {
         setSearchValue(newSearchQuery);
     }
-  }, [pathname, searchParams, isLocalSearch]);
+  }, [pathname, searchParams, isLocalSearch, searchValue]);
 
 
   useEffect(() => {
