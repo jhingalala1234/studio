@@ -117,6 +117,17 @@ export default function EditProfileForm({ user }: { user: User }) {
               <Input value={user.email} disabled className="bg-muted/50" />
             </FormItem>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormItem>
+              <FormLabel>Team</FormLabel>
+              <Input value={user.team || 'N/A'} disabled className="bg-muted/50" />
+            </FormItem>
+            <FormItem>
+              <FormLabel>Sub-Team</FormLabel>
+              <Input value={user.subTeam || 'N/A'} disabled className="bg-muted/50" />
+            </FormItem>
+        </div>
+
 
         <FormField
           control={form.control}
