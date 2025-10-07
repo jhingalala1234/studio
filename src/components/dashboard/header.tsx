@@ -20,7 +20,7 @@ import { Logo } from '@/components/logo';
 import type { User } from '@/types';
 import { cn } from '@/lib/utils';
 import { NotificationPopover } from './notification-popover';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useDebounce } from 'use-debounce';
 
 
@@ -35,7 +35,7 @@ const navItems = [
   { href: '/dashboard/logs', label: 'Logs', icon: Activity, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
 ];
 
-const LOCAL_SEARCH_PATHS = ['/dashboard/tasks', '/dashboard/announcements', '/dashboard/logs'];
+const LOCAL_SEARCH_PATHS = ['/dashboard/tasks', '/dashboard/announcements', '/dashboard/logs', '/dashboard/users', '/dashboard/admin'];
 
 
 const getUserTitle = (user: User): string => {
@@ -70,29 +70,41 @@ export function Header({ user }: { user: User }) {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);
   };
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isLocalSearch) {
+        // Debounce handles this for local search
+        return;
+    }
+    if (searchValue) {
+        router.push(`/dashboard/search?q=${searchValue}`);
+    }
+  }
   
   useEffect(() => {
+    if (!isLocalSearch) return;
+
     const current = new URLSearchParams(Array.from(searchParams.entries()));
     
-    if (isLocalSearch) {
-        if (debouncedSearchValue) {
-            current.set('q', debouncedSearchValue);
-        } else {
-            current.delete('q');
-        }
-        const search = current.toString();
-        const query = search ? `?${search}` : "";
-        router.push(`${pathname}${query}`);
+    if (debouncedSearchValue) {
+        current.set('q', debouncedSearchValue);
+    } else {
+        current.delete('q');
     }
-    // We don't implement global search here yet.
+    const search = current.toString();
+    const query = search ? `?${search}` : "";
+    router.push(`${pathname}${query}`);
+
   }, [debouncedSearchValue, isLocalSearch, pathname, router, searchParams]);
 
   useEffect(() => {
-    // Reset search bar when navigating to a non-local-search page
-    if (!isLocalSearch && searchValue) {
-        setSearchValue('');
+    // Reset search bar when navigating
+    const newSearchQuery = searchParams.get('q') || '';
+    if (searchValue !== newSearchQuery) {
+        setSearchValue(newSearchQuery);
     }
-  }, [pathname, isLocalSearch]);
+  }, [pathname, searchParams]);
 
 
   useEffect(() => {
@@ -208,17 +220,18 @@ export function Header({ user }: { user: User }) {
             </div>
 
             <div className="flex items-center justify-end gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder={isLocalSearch ? "Search this page..." : "Global search coming soon..."}
-                  disabled={!isLocalSearch}
-                  value={searchValue}
-                  onChange={handleSearchChange}
-                  className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
-                />
-              </div>
+                <form onSubmit={handleSearchSubmit}>
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        type="search"
+                        placeholder={isLocalSearch ? "Search this page..." : "Search anything..."}
+                        value={searchValue}
+                        onChange={handleSearchChange}
+                        className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
+                        />
+                    </div>
+                </form>
 
               <NotificationPopover user={user} />
 
