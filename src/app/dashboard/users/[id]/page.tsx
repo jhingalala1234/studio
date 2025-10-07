@@ -1,7 +1,8 @@
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getUserById, getCurrentUser } from '@/lib/data';
+import { getUserById } from '@/lib/data';
+import { getCurrentUser } from '@/lib/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Card,
