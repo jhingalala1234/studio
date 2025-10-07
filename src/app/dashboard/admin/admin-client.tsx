@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useRef } from 'react';
+import { useState, useTransition, useRef, useEffect } from 'react';
 import type { User, UserRole, Team, SubTeam } from '@/types';
 import {
   Table,
@@ -47,11 +47,23 @@ const subTeams: (SubTeam | null | string)[] = [
 const NONE_VALUE = "__NONE__";
 const userTemplateKeys: (keyof User)[] = ['id', 'name', 'username', 'email', 'password', 'avatar', 'role', 'team', 'subTeam', 'phone', 'birthday', 'linkedin', 'github'];
 
+const sortUsersById = (users: User[]) => {
+  return [...users].sort((a, b) => {
+    const numA = parseInt(a.id.split('-')[1] || '0', 10);
+    const numB = parseInt(b.id.split('-')[1] || '0', 10);
+    return numA - numB;
+  });
+};
+
 export default function AdminClient({ users: initialUsers }: { users: User[] }) {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>(() => sortUsersById(initialUsers));
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setUsers(sortUsersById(initialUsers));
+  }, [initialUsers]);
 
   const getNextUserId = () => {
     const existingIds = users.map(u => {
@@ -89,11 +101,11 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
       linkedin: null,
       github: null,
     };
-    setUsers(prev => [newUser, ...prev]);
+    setUsers(prev => sortUsersById([newUser, ...prev]));
   }
 
   const handleDeleteUser = (userId: string) => {
-    setUsers(prev => prev.filter(user => user.id !== userId));
+    setUsers(prev => sortUsersById(prev.filter(user => user.id !== userId)));
   }
 
   const handleSeedDatabase = () => {
@@ -101,7 +113,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
       try {
         const usersJson = JSON.stringify(users);
         const newUsers = await seedUsers(usersJson);
-        setUsers(newUsers);
+        setUsers(sortUsersById(newUsers));
         toast({
           title: 'Database Seeded',
           description: 'User data has been replaced with the data from the table.',
@@ -167,7 +179,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
             }
             return newUser as User;
           });
-          setUsers(prev => [...prev, ...parsedUsers]);
+          setUsers(prev => sortUsersById([...prev, ...parsedUsers]));
           toast({
             title: 'CSV Imported',
             description: `${parsedUsers.length} users loaded into the table. Review and click 'Seed Database' to save.`,
@@ -400,3 +412,5 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
     </Card>
   );
 }
+
+    
