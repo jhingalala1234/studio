@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import type { User, Log } from '@/types';
 import { getSubordinates } from '@/lib/hierarchy';
 import { useSearchParams } from 'next/navigation';
@@ -10,9 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 
 interface LogsClientProps {
-    currentUser: User;
-    allUsers: User[];
-    allLogs: Log[];
+  currentUser: User;
+  allUsers: User[];
+  allLogs: Log[];
 }
 
 export default function LogsClient({ currentUser, allUsers, allLogs }: LogsClientProps) {
@@ -29,10 +28,7 @@ export default function LogsClient({ currentUser, allUsers, allLogs }: LogsClien
       
       return getSubordinates(id, allUsers).then(subordinateIds => {
         const visibleUserIds = new Set([id, ...subordinateIds]);
-        return logs.filter(log => {
-            if (visibleUserIds.has(log.userId)) return true;
-            return false;
-        });
+        return logs.filter(log => visibleUserIds.has(log.userId));
       });
     };
 
@@ -60,19 +56,14 @@ export default function LogsClient({ currentUser, allUsers, allLogs }: LogsClien
     });
   }, [currentUser, allLogs, allUsers, searchQuery]);
 
-  // This part is tricky because enrichedLogs is a promise.
-  // For a client component, we'd typically use a state and useEffect.
-  // Let's assume for this structure we can await it somehow or use Suspense.
-  // But given the constraints, let's just use a state.
-  
-  const [logs, setLogs] = React.useState<Awaited<typeof enrichedLogs>>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [logs, setLogs] = useState<Awaited<typeof enrichedLogs>>([]);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setLoading(true);
     enrichedLogs.then(resolvedLogs => {
-        setLogs(resolvedLogs);
-        setLoading(false);
+      setLogs(resolvedLogs);
+      setLoading(false);
     });
   }, [enrichedLogs]);
 
@@ -82,36 +73,35 @@ export default function LogsClient({ currentUser, allUsers, allLogs }: LogsClien
 
   return (
     <ScrollArea className="h-[60vh]">
-        <div className="space-y-4">
+      <div className="space-y-4">
         {logs.map((log, index) => (
-            <div key={log.id}>
+          <div key={log.id}>
             <div className="flex items-start gap-4 p-4">
-                <Avatar className="h-10 w-10">
+              <Avatar className="h-10 w-10">
                 <AvatarImage src={log.userAvatar ?? undefined} alt={log.userName} />
                 <AvatarFallback>
-                    {log.userName.split(' ').map(n => n[0]).join('')}
+                  {log.userName.split(' ').map(n => n[0]).join('')}
                 </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 space-y-1">
+              </Avatar>
+              <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
-                    <p className="font-semibold">{log.userName}</p>
-                    <p className="text-xs text-muted-foreground">
+                  <p className="font-semibold">{log.userName}</p>
+                  <p className="text-xs text-muted-foreground">
                     {new Date(log.timestamp).toLocaleString()}
-                    </p>
+                  </p>
                 </div>
                 <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: log.message }} />
-                </div>
+              </div>
             </div>
             {index < logs.length - 1 && <Separator />}
-            </div>
+          </div>
         ))}
         {logs.length === 0 && (
-            <div className="flex items-center justify-center h-40 text-muted-foreground">
-                No logs to display.
-            </div>
+          <div className="flex items-center justify-center h-40 text-muted-foreground">
+            No logs to display.
+          </div>
         )}
-        </div>
+      </div>
     </ScrollArea>
   );
 }
-
