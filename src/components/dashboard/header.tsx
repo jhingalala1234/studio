@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Menu, Search, Users, CalendarCheck, FilePlus, Rss, Shield, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +20,8 @@ import { Logo } from '@/components/logo';
 import type { User } from '@/types';
 import { cn } from '@/lib/utils';
 import { NotificationPopover } from './notification-popover';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useDebounce } from 'use-debounce';
 
 
 const navItems = [
@@ -33,6 +34,9 @@ const navItems = [
   { href: '/dashboard/admin', label: 'Admin', icon: Shield, roles: ['Co-founder', 'Secretary', 'Chair of Directors'] },
   { href: '/dashboard/logs', label: 'Logs', icon: Activity, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
 ];
+
+const LOCAL_SEARCH_PATHS = ['/dashboard/tasks', '/dashboard/announcements', '/dashboard/logs'];
+
 
 const getUserTitle = (user: User): string => {
   const { role, team, subTeam } = user;
@@ -50,11 +54,46 @@ const getUserTitle = (user: User): string => {
 export function Header({ user }: { user: User }) {
   const userInitials = user.name.split(' ').map((n) => n[0]).join('');
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const userTitle = getUserTitle(user);
   const [greeting, setGreeting] = useState<{ text: string; punctuation: string }>({ text: 'Welcome Back', punctuation: '!' });
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  
+  const [searchValue, setSearchValue] = useState(searchParams.get('q') || '');
+  const [debouncedSearchValue] = useDebounce(searchValue, 300);
 
   const visibleNavItems = navItems.filter(item => item.roles.includes(user.role));
+
+  const isLocalSearch = LOCAL_SEARCH_PATHS.some(p => pathname.startsWith(p));
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchValue(e.target.value);
+  };
+  
+  useEffect(() => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    
+    if (isLocalSearch) {
+        if (debouncedSearchValue) {
+            current.set('q', debouncedSearchValue);
+        } else {
+            current.delete('q');
+        }
+        const search = current.toString();
+        const query = search ? `?${search}` : "";
+        router.push(`${pathname}${query}`);
+    }
+    // We don't implement global search here yet.
+  }, [debouncedSearchValue, isLocalSearch, pathname, router, searchParams]);
+
+  useEffect(() => {
+    // Reset search bar when navigating to a non-local-search page
+    if (!isLocalSearch && searchValue) {
+        setSearchValue('');
+    }
+  }, [pathname, isLocalSearch]);
+
 
   useEffect(() => {
     const now = new Date();
@@ -173,7 +212,10 @@ export function Header({ user }: { user: User }) {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search..."
+                  placeholder={isLocalSearch ? "Search this page..." : "Global search coming soon..."}
+                  disabled={!isLocalSearch}
+                  value={searchValue}
+                  onChange={handleSearchChange}
                   className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
                 />
               </div>
