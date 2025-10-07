@@ -412,7 +412,7 @@ export default function TaskForm({ formType, task, currentUser, allUsers }: Task
                                                         <SelectValue placeholder="Hour" />
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
+                                                <SelectContent className="max-h-48">
                                                     {Array.from({length: 12}, (_, i) => String(i + 1)).map(hour => <SelectItem key={hour} value={hour}>{hour}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
