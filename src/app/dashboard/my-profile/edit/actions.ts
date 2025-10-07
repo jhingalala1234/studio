@@ -1,4 +1,3 @@
-
 'use server';
 
 import { z } from 'zod';
@@ -51,6 +50,9 @@ export async function updateMyProfile(formData: FormData) {
   }
 
   try {
+    if (!adminDb) {
+      throw new Error("Database not initialized.");
+    }
     await adminDb.collection('users').doc(currentUser.id).update(dataToUpdate);
   } catch (error) {
     console.error("Failed to update profile:", error);
