@@ -144,7 +144,7 @@ export function Header({ user }: { user: User }) {
       {/* Translucent Sections */}
       <div className="w-full flex flex-col items-center glass border-b border-white/10">
         <nav className="hidden w-full items-center justify-center border-b border-white/10 px-4 py-2 md:flex">
-            <div className="flex items-center justify-center gap-6">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
               {visibleNavItems.map(({ href, label }) => (
                 <Link
                   key={href}
