@@ -1,7 +1,7 @@
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getUserById } from '@/lib/data';
+import { getUserById, getCurrentUser } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Card,
@@ -16,11 +16,13 @@ import {
   Github,
   Linkedin,
   Mail,
+  Pencil,
   Phone,
   User as UserIcon,
   Users,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
 
 const getUserTitle = (role: string, team: string | null): string => {
   if (role === 'Chair of Directors' && team) {
@@ -58,11 +60,16 @@ interface UserProfilePageProps {
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
   const resolvedParams = await params;
-  const user = await getUserById(resolvedParams.id);
+  const [user, currentUser] = await Promise.all([
+    getUserById(resolvedParams.id),
+    getCurrentUser()
+  ]);
 
-  if (!user) {
+  if (!user || !currentUser) {
     notFound();
   }
+  
+  const isViewingOwnProfile = user.id === currentUser.id;
 
   const position = getUserTitle(user.role, user.team);
 
@@ -86,6 +93,14 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
               <h1 className="font-headline text-3xl font-bold">{user.name}</h1>
               <p className="text-muted-foreground">@{user.username}</p>
             </div>
+             {isViewingOwnProfile && (
+              <Button asChild>
+                <Link href="/dashboard/my-profile/edit">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Link>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
