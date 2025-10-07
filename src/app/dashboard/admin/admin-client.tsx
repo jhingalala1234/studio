@@ -345,7 +345,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Select sub-team" />
                       </SelectTrigger>
-                      <SelectContent position="popper" className="w-auto min-w-[10rem]">
+                      <SelectContent position="popper" className="w-auto min-w-[10rem] max-h-48">
                         {subTeams.map(subTeam => (
                           <SelectItem key={subTeam ?? 'null-subteam'} value={subTeam || NONE_VALUE}>
                             {subTeam || 'None'}
