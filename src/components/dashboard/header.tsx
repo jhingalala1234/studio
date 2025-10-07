@@ -3,22 +3,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Search, Users, CalendarCheck, GanttChartSquare, FilePlus, Rss, Shield, Activity } from 'lucide-react';
+import { Menu, Search, Users, CalendarCheck, FilePlus, Rss, Shield, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/app/actions';
 import { Logo } from '@/components/logo';
-import type { User, UserRole, Team, SubTeam } from '@/types';
+import type { User } from '@/types';
 import { cn } from '@/lib/utils';
 import { NotificationPopover } from './notification-popover';
 import { useState, useEffect } from 'react';
@@ -28,7 +25,6 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/tasks', label: 'Tasks', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/my-week', label: 'My Week', icon: CalendarCheck, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
-  { href: '/dashboard/gantt', label: 'Gantt', icon: GanttChartSquare, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/generate-tasks', label: 'Generate Tasks', icon: FilePlus, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead'] },
   { href: '/dashboard/announcements', label: 'Announcements', icon: Rss, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
   { href: '/dashboard/users', label: 'Users', icon: null, roles: ['Co-founder', 'Secretary', 'Chair of Directors', 'Lead', 'Member'] },
@@ -87,7 +83,6 @@ export function Header({ user }: { user: User }) {
   return (
     <header className="sticky top-0 z-50 flex flex-col items-center">
       
-      {/* Opaque Logo Bar */}
       <div className="w-full border-b border-white/10 px-4 md:px-6 bg-background">
         <div className="relative flex h-16 items-center justify-center">
             <div className="absolute left-0 md:hidden">
@@ -141,7 +136,6 @@ export function Header({ user }: { user: User }) {
         </div>
       </div>
       
-      {/* Translucent Sections */}
       <div className="w-full flex flex-col items-center glass border-b border-white/10">
         <nav className="hidden w-full items-center justify-center border-b border-white/10 px-4 py-2 md:flex">
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
