@@ -311,7 +311,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         {roles.map(role => (
                           <SelectItem key={role} value={role}>
                             {role}
@@ -328,7 +328,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Select team" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         {teams.map(team => (
                           <SelectItem key={team ?? 'null'} value={team || NONE_VALUE}>
                             {team || 'None'}
@@ -345,7 +345,7 @@ export default function AdminClient({ users: initialUsers }: { users: User[] }) 
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Select sub-team" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         {subTeams.map(subTeam => (
                           <SelectItem key={subTeam ?? 'null-subteam'} value={subTeam || NONE_VALUE}>
                             {subTeam || 'None'}
