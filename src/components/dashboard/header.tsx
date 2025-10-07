@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
@@ -83,7 +84,7 @@ export function Header({ user }: { user: User }) {
   return (
     <header className="sticky top-0 z-50 flex flex-col items-center">
       
-      <div className="w-full border-b border-white/10 px-4 md:px-6 bg-background">
+      <div className="w-full border-b border-white/10 bg-background px-4 md:px-6">
         <div className="relative flex h-16 items-center justify-center">
             <div className="absolute left-0 md:hidden">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
