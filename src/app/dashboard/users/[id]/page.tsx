@@ -66,6 +66,11 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 
   const position = getUserTitle(user.role, user.team);
 
+  // Check if birthday is a valid date string before formatting
+  const formattedBirthday = user.birthday && !isNaN(new Date(user.birthday).getTime())
+    ? format(new Date(user.birthday), 'MMMM do')
+    : null;
+
   return (
     <div className="space-y-8">
       <Card className="glass">
@@ -98,7 +103,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
             <InfoRow icon={<Users size={18} />} label="Group Name" value={`${user.team} ${user.subTeam ? `(${user.subTeam})` : ''}`} />
             <InfoRow icon={<Mail size={18} />} label="Email" value={user.email} isLink href={`mailto:${user.email}`} />
             <InfoRow icon={<Phone size={18} />} label="Phone Number" value={user.phone} />
-            <InfoRow icon={<Cake size={18} />} label="Birthday" value={user.birthday ? format(new Date(user.birthday), 'MMMM do') : null} />
+            <InfoRow icon={<Cake size={18} />} label="Birthday" value={formattedBirthday} />
             <InfoRow icon={<Linkedin size={18} />} label="LinkedIn" value={user.linkedin} isLink />
             <InfoRow icon={<Github size={18} />} label="GitHub" value={user.github} isLink />
           </div>
