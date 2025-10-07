@@ -54,11 +54,25 @@ export default async function Dashboard() {
 
   if (isPresidium) {
     teamTasks = tasks.filter(t => t.status === 'To Do' || t.status === 'In Progress');
-  } else {
+  } else if (user.role === 'Lead') {
+    const userMap = new Map(users.map(u => [u.id, u]));
     teamTasks = tasks.filter(t => {
       if (!t.assignedToIds || t.assignedToIds.length === 0) return false;
-      const taskTeam = users.find(u => u.id === t.assignedToIds![0])?.team;
-      return taskTeam === user.team && !t.assignedToIds.includes(user.id);
+      // Check if any assignee is in the lead's sub-team
+      return t.assignedToIds.some(assigneeId => {
+          const assignee = userMap.get(assigneeId);
+          return assignee?.subTeam === user.subTeam && assignee.id !== user.id;
+      });
+    });
+  } else { // This will now primarily be for Chair of Directors
+    const userMap = new Map(users.map(u => [u.id, u]));
+    teamTasks = tasks.filter(t => {
+      if (!t.assignedToIds || t.assignedToIds.length === 0) return false;
+      // Check if any assignee is in the director's team
+      return t.assignedToIds.some(assigneeId => {
+          const assignee = userMap.get(assigneeId);
+          return assignee?.team === user.team && assignee.id !== user.id;
+      });
     });
   }
 
@@ -128,12 +142,18 @@ export default async function Dashboard() {
               </Card>
               <Card className="glass">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{isPresidium ? "Active Organization Tasks" : "Team Tasks"}</CardTitle>
+                  <CardTitle className="text-sm font-medium">{isPresidium ? "Active Organization Tasks" : user.role === 'Lead' ? "Sub-Team Tasks" : "Team Tasks"}</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                   <div className="text-2xl font-bold">{teamTasks.length}</div>
-                  <p className="text-xs text-muted-foreground">{isPresidium ? "All 'To Do' & 'In Progress' tasks" : "Across your teams and leads"}</p>
+                   <p className="text-xs text-muted-foreground">
+                    {isPresidium 
+                        ? "All 'To Do' & 'In Progress' tasks" 
+                        : user.role === 'Lead'
+                        ? "Across your sub-team"
+                        : "Across your team and leads"}
+                    </p>
               </CardContent>
               </Card>
               <Card className="glass">
