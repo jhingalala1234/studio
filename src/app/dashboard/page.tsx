@@ -10,6 +10,7 @@ import {
   XCircle,
   Rss,
   Cake,
+  Bell,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +38,7 @@ import { getSubordinates } from '@/lib/hierarchy';
 import { formatDistanceToNow, format } from 'date-fns';
 import { adminDb } from '@/lib/firebase-admin';
 
-async function checkAndPostBirthdayAnnouncements() {
+async function checkAndSendBirthdayNotifications() {
     if (!adminDb) return;
 
     const today = new Date();
@@ -72,28 +73,33 @@ async function checkAndPostBirthdayAnnouncements() {
     });
 
     if (birthdayUsers.length > 0) {
-        const currentUser = await getCurrentUser(); // Needed for authorId
-        if(!currentUser) return; // Should not happen on dashboard
-
         const batch = adminDb.batch();
+        const notificationsCollection = adminDb.collection('notifications');
 
-        for (const user of birthdayUsers) {
-            const announcementRef = adminDb.collection('announcements').doc();
-            const announcement = {
-                title: `🎉 Happy Birthday, ${user.name}!`,
-                content: `Please join us in wishing a very happy birthday to our amazing team member, ${user.name}! 🎂🎈\n\nWe appreciate all your hard work and dedication. Hope you have a fantastic day!`,
-                authorId: currentUser.id, // Using current user as a system-like author
-                createdAt: new Date().toISOString(),
-                links: [],
-                targetDomains: [], // Org-wide
-            };
-            batch.set(announcementRef, announcement);
+        for (const birthdayUser of birthdayUsers) {
+            const message = `It's <strong>${birthdayUser.name}'s</strong> birthday today! Wish them well. 🎂`;
+            const link = `/dashboard/users/${birthdayUser.id}`;
+
+            // Send notification to every other user
+            for (const recipient of allUsers) {
+                if (recipient.id === birthdayUser.id) continue; // Don't notify the person whose birthday it is
+
+                const notifRef = notificationsCollection.doc();
+                 batch.set(notifRef, {
+                    userId: recipient.id,
+                    actorId: birthdayUser.id, // The "actor" is the person whose birthday it is
+                    type: 'ANNOUNCEMENT_NEW', // Using a generic type for now
+                    message,
+                    link,
+                    isRead: false,
+                    createdAt: new Date().toISOString(),
+                });
+            }
         }
-
         await batch.commit();
     }
 
-    await configRef.set({ lastBirthdayCheck: todayDateString });
+    await configRef.set({ lastBirthdayCheck: todayDateString }, { merge: true });
 }
 
 
@@ -102,7 +108,7 @@ export default async function Dashboard() {
 
   if (!user) return null;
 
-  await checkAndPostBirthdayAnnouncements();
+  await checkAndSendBirthdayNotifications();
 
   const [users, tasks, allLogs, announcements] = await Promise.all([
     getAllUsers(),
