@@ -56,30 +56,55 @@ export default function TrackerClient({ allUsers }: { allUsers: User[] }) {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          const submittedEmails = new Set(
-            results.data
-              .map((row: any) => {
-                const emailKey = Object.keys(row).find(key => key.toLowerCase().includes('email'));
-                return emailKey ? (row[emailKey] as string)?.trim().toLowerCase() : null;
-              })
-              .filter(Boolean)
-          );
+          const sheetData = results.data as any[];
 
-          if (submittedEmails.size === 0) {
-            throw new Error("No valid email addresses found in the sheet. Make sure there's an 'Email Address' column.");
+          if (sheetData.length === 0) {
+            throw new Error("CSV is empty or could not be parsed correctly.");
+          }
+
+          // Find headers for our key fields, case-insensitive
+          const headerMap: { [key: string]: string } = {};
+          const headers = Object.keys(sheetData[0]);
+          const possibleEmailHeaders = ['email', 'email address'];
+          const possibleNameHeaders = ['name', 'full name'];
+          const possiblePhoneHeaders = ['phone', 'phone number'];
+          const possibleRegNoHeaders = ['regno', 'reg no', 'registration no', 'registration number'];
+
+          headerMap.email = headers.find(h => possibleEmailHeaders.includes(h.toLowerCase())) || '';
+          headerMap.name = headers.find(h => possibleNameHeaders.includes(h.toLowerCase())) || '';
+          headerMap.phone = headers.find(h => possiblePhoneHeaders.includes(h.toLowerCase())) || '';
+          headerMap.regNo = headers.find(h => possibleRegNoHeaders.includes(h.toLowerCase())) || '';
+
+          const submittedIdentifiers = new Set<string>();
+
+          sheetData.forEach(row => {
+            if (headerMap.email && row[headerMap.email]) submittedIdentifiers.add(String(row[headerMap.email]).trim().toLowerCase());
+            if (headerMap.name && row[headerMap.name]) submittedIdentifiers.add(String(row[headerMap.name]).trim().toLowerCase());
+            if (headerMap.phone && row[headerMap.phone]) submittedIdentifiers.add(String(row[headerMap.phone]).trim().replace(/\s/g, ''));
+            if (headerMap.regNo && row[headerMap.regNo]) submittedIdentifiers.add(String(row[headerMap.regNo]).trim().toLowerCase());
+          });
+          
+          if (submittedIdentifiers.size === 0) {
+            throw new Error("No identifying data (Email, Name, Phone, RegNo) found in the sheet. Please check your column headers.");
           }
 
           const data = allUsers
             .filter(user => user.role !== 'Co-founder' && user.role !== 'Secretary') // Exclude Presidium from tracking
             .map(user => {
-              const status: TrackingStatus = submittedEmails.has(user.email.toLowerCase()) ? 'submitted' : 'not_submitted';
+              const isSubmitted = 
+                submittedIdentifiers.has(user.email.toLowerCase()) ||
+                submittedIdentifiers.has(user.name.toLowerCase()) ||
+                (user.phone && submittedIdentifiers.has(user.phone.replace(/\s/g, ''))) ||
+                (user.regNo && submittedIdentifiers.has(user.regNo.toLowerCase()));
+
+              const status: TrackingStatus = isSubmitted ? 'submitted' : 'not_submitted';
               return { user, status };
             });
           
           setTrackingData(data);
           toast({
             title: 'Tracking Complete',
-            description: `Found ${submittedEmails.size} submissions.`,
+            description: `Found ${submittedIdentifiers.size} unique entries in the sheet.`,
           });
         },
         error: (err: any) => {
