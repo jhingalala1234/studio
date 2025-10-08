@@ -190,37 +190,39 @@ export function Header({ user }: { user: User }) {
       </div>
       
       <div className="w-full flex flex-col items-center glass border-b border-white/10">
-        <nav className="hidden w-full items-center justify-center border-b border-white/10 px-4 py-2 md:flex">
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-              {visibleNavItems.map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    'relative rounded-md px-3 py-1 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/10 hover:text-white',
-                    pathname.startsWith(href) && href !== '/dashboard' || pathname === href ? 'text-white' : ''
-                  )}
-                >
-                  {label}
-                  {(pathname.startsWith(href) && href !== '/dashboard' || pathname === href) && (
-                    <span className="absolute inset-x-1 -bottom-2 h-0.5 rounded-full bg-primary transition-all"></span>
-                  )}
-                </Link>
-              ))}
-            </div>
-        </nav>
+        <div className="w-full overflow-x-auto">
+            <nav className="flex w-full items-center justify-center border-b border-white/10 px-4 py-2">
+                <div className="flex flex-nowrap items-center justify-center gap-x-4 sm:gap-x-6">
+                  {visibleNavItems.map(({ href, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        'relative whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/10 hover:text-white',
+                        pathname.startsWith(href) && href !== '/dashboard' || pathname === href ? 'text-white' : ''
+                      )}
+                    >
+                      {label}
+                      {(pathname.startsWith(href) && href !== '/dashboard' || pathname === href) && (
+                        <span className="absolute inset-x-1 -bottom-2 h-0.5 rounded-full bg-primary transition-all"></span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+            </nav>
+        </div>
 
         <div className="w-full max-w-7xl px-4 py-3 md:px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-y-4">
-            <div className="flex flex-col text-center md:text-left">
+            <div className="flex flex-col text-center md:text-left w-full">
                 <h1 className="font-headline text-2xl font-bold md:text-3xl text-white">
                   {greeting.text}, {user?.name.split(' ')[0]}{greeting.punctuation}
                 </h1>
                 <p className="text-md text-muted-foreground">{`You are the ${userTitle} at CloudX.`}</p>
             </div>
 
-            <div className="flex items-center justify-end gap-2">
-                <form onSubmit={handleSearchSubmit}>
+            <div className="flex w-full items-center justify-center md:justify-end gap-2">
+                <form onSubmit={handleSearchSubmit} className="w-full md:w-auto">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input

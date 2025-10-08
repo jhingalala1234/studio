@@ -165,7 +165,7 @@ function SubmissionTracker({ allUsers }: { allUsers: User[] }) {
             <label htmlFor="sheet-url" className="text-sm font-medium">
               Google Sheet Publish URL (CSV)
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 id="sheet-url"
                 placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
@@ -173,7 +173,7 @@ function SubmissionTracker({ allUsers }: { allUsers: User[] }) {
                 onChange={(e) => setSheetUrl(e.target.value)}
                 disabled={isLoading}
               />
-              <Button onClick={handleTrackSubmissions} disabled={isLoading}>
+              <Button onClick={handleTrackSubmissions} disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading ? 'Tracking...' : 'Track Submissions'}
               </Button>
             </div>
@@ -195,7 +195,7 @@ function SubmissionTracker({ allUsers }: { allUsers: User[] }) {
         <>
           <div className="flex items-center justify-center">
             <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as Team | 'All')}>
-              <TabsList>
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                 <TabsTrigger value="All">All</TabsTrigger>
                 {TEAMS.map(team => (
                   <TabsTrigger key={team} value={team}>{team}</TabsTrigger>
@@ -364,7 +364,7 @@ function SheetComparator() {
             <Input id="sheet-b-url" placeholder="URL for the sheet to compare against..." value={sheetBUrl} onChange={(e) => setSheetBUrl(e.target.value)} disabled={isLoading} />
              <p className="text-xs text-muted-foreground">The sheet containing entries to check for existence.</p>
           </div>
-          <Button onClick={handleCompare} disabled={isLoading}>
+          <Button onClick={handleCompare} disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? 'Comparing...' : 'Compare Sheets'}
           </Button>
           {error && (
@@ -387,9 +387,9 @@ function SheetComparator() {
                 <ScrollArea className="h-96">
                   <div className="space-y-2 pr-4">
                       {missingEntries.map((entry, index) => (
-                          <div key={index} className="flex items-center gap-4 rounded-md border p-2">
+                          <div key={index} className="flex items-center gap-4 rounded-md border p-2 text-xs sm:text-sm overflow-x-auto">
                               {Object.values(entry).map((val, i) => (
-                                <p key={i} className="text-sm truncate" title={String(val)}>{String(val)}</p>
+                                <p key={i} className="truncate" title={String(val)}>{String(val)}</p>
                               ))}
                           </div>
                       ))}
@@ -412,7 +412,7 @@ export default function TrackerClient({ allUsers }: { allUsers: User[] }) {
   return (
     <Tabs defaultValue="tracker" className="w-full">
       <div className="flex justify-center">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-2">
           <TabsTrigger value="tracker"><Users className="mr-2" />Submission Tracker</TabsTrigger>
           <TabsTrigger value="comparator"><FileDiff className="mr-2" />Sheet Comparator</TabsTrigger>
         </TabsList>
@@ -426,5 +426,3 @@ export default function TrackerClient({ allUsers }: { allUsers: User[] }) {
     </Tabs>
   );
 }
-
-    
