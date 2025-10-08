@@ -9,6 +9,7 @@ import {
   Users,
   XCircle,
   Rss,
+  Cake,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -33,12 +34,75 @@ import { TaskChart } from './task-chart';
 import { getAllTasks, getAllUsers, getAllLogs, getAnnouncements } from '@/lib/data';
 import type { Task, User, Log } from '@/types';
 import { getSubordinates } from '@/lib/hierarchy';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
+import { adminDb } from '@/lib/firebase-admin';
+
+async function checkAndPostBirthdayAnnouncements() {
+    if (!adminDb) return;
+
+    const today = new Date();
+    // IST is UTC+5:30
+    const istOffset = 330 * 60 * 1000;
+    const istDate = new Date(today.getTime() + istOffset);
+    
+    const todayMonth = istDate.getUTCMonth();
+    const todayDay = istDate.getUTCDate();
+    const todayYear = istDate.getUTCFullYear();
+    
+    const todayDateString = `${todayYear}-${todayMonth + 1}-${todayDay}`;
+
+    const configRef = adminDb.collection('appConfig').doc('dailyChecks');
+    const configDoc = await configRef.get();
+    const lastBirthdayCheck = configDoc.data()?.lastBirthdayCheck;
+
+    if (lastBirthdayCheck === todayDateString) {
+        return; // Already checked today
+    }
+
+    const allUsers = await getAllUsers();
+    const birthdayUsers = allUsers.filter(user => {
+        if (!user.birthday) return false;
+        try {
+            // Birthdays are stored as YYYY-MM-DD
+            const [year, month, day] = user.birthday.split('-').map(Number);
+            return month - 1 === todayMonth && day === todayDay;
+        } catch (e) {
+            return false; // Invalid date format
+        }
+    });
+
+    if (birthdayUsers.length > 0) {
+        const currentUser = await getCurrentUser(); // Needed for authorId
+        if(!currentUser) return; // Should not happen on dashboard
+
+        const batch = adminDb.batch();
+
+        for (const user of birthdayUsers) {
+            const announcementRef = adminDb.collection('announcements').doc();
+            const announcement = {
+                title: `🎉 Happy Birthday, ${user.name}!`,
+                content: `Please join us in wishing a very happy birthday to our amazing team member, ${user.name}! 🎂🎈\n\nWe appreciate all your hard work and dedication. Hope you have a fantastic day!`,
+                authorId: currentUser.id, // Using current user as a system-like author
+                createdAt: new Date().toISOString(),
+                links: [],
+                targetDomains: [], // Org-wide
+            };
+            batch.set(announcementRef, announcement);
+        }
+
+        await batch.commit();
+    }
+
+    await configRef.set({ lastBirthdayCheck: todayDateString });
+}
+
 
 export default async function Dashboard() {
   const user = await getCurrentUser();
 
   if (!user) return null;
+
+  await checkAndPostBirthdayAnnouncements();
 
   const [users, tasks, allLogs, announcements] = await Promise.all([
     getAllUsers(),
