@@ -89,7 +89,7 @@ function SubmissionTracker({ allUsers }: { allUsers: User[] }) {
           }
 
           const data = allUsers
-            .filter(user => user.role !== 'Co-founder' && user.role !== 'Secretary')
+            .filter(user => user.team !== 'Presidium')
             .map(user => {
               const isSubmitted = 
                 submittedIdentifiers.has(user.email.toLowerCase()) ||
@@ -273,12 +273,21 @@ function SheetComparator() {
     });
   };
 
-  const getIdentifiers = (row: any, headerMap: Record<string, string>): Set<string> => {
-    const identifiers = new Set<string>();
-    if (headerMap.email && row[headerMap.email]) identifiers.add(String(row[headerMap.email]).trim().toLowerCase());
-    if (headerMap.name && row[headerMap.name]) identifiers.add(String(row[headerMap.name]).trim().toLowerCase());
-    if (headerMap.phone && row[headerMap.phone]) identifiers.add(String(row[headerMap.phone]).trim().replace(/\s/g, ''));
-    if (headerMap.regNo && row[headerMap.regNo]) identifiers.add(String(row[headerMap.regNo]).trim().toLowerCase());
+  const getIdentifierMap = (row: any, headerMap: Record<string, string>): Map<string, string> => {
+    const identifiers = new Map<string, string>();
+    const email = row[headerMap.email] ? String(row[headerMap.email]).trim().toLowerCase() : '';
+    if (email.endsWith('@srmist.edu.in')) {
+      identifiers.set('email', email);
+    }
+    if (headerMap.name && row[headerMap.name]) {
+      identifiers.set('name', String(row[headerMap.name]).trim().toLowerCase());
+    }
+    if (headerMap.phone && row[headerMap.phone]) {
+      identifiers.set('phone', String(row[headerMap.phone]).trim().replace(/\s/g, ''));
+    }
+    if (headerMap.regNo && row[headerMap.regNo]) {
+      identifiers.set('regNo', String(row[headerMap.regNo]).trim().toLowerCase());
+    }
     return identifiers;
   };
 
@@ -322,7 +331,8 @@ function SheetComparator() {
       
       const identifiersB = new Set<string>();
       dataB.forEach(row => {
-        getIdentifiers(row, headerMapB).forEach(id => identifiersB.add(id));
+        const ids = getIdentifierMap(row, headerMapB);
+        ids.forEach(id => identifiersB.add(id));
       });
 
       if (identifiersB.size === 0) {
@@ -330,9 +340,11 @@ function SheetComparator() {
       }
 
       const missing = dataA.filter(rowA => {
-        const idsA = getIdentifiers(rowA, headerMapA);
-        if (idsA.size === 0) return false; // Don't include rows from A with no identifiers
-        return ![...idsA].some(id => identifiersB.has(id));
+        const idsA = getIdentifierMap(rowA, headerMapA);
+        if (idsA.size === 0) return false;
+        
+        // Return true (missing) if NOT SOME of the identifiers in A are present in B
+        return ![...idsA.values()].some(id => identifiersB.has(id));
       });
 
       setMissingEntries(missing);
@@ -426,3 +438,5 @@ export default function TrackerClient({ allUsers }: { allUsers: User[] }) {
     </Tabs>
   );
 }
+
+    
