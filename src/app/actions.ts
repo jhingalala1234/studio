@@ -79,6 +79,7 @@ export async function sendPasswordResetLink(data: unknown) {
   const token = crypto.randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 3600000); // 1 hour from now
 
+  // This will create a new token or overwrite an existing one for the user.
   await adminDb.collection('passwordResetTokens').doc(userId).set({
     token,
     expires,
