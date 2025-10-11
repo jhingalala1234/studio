@@ -44,3 +44,40 @@ export async function logout() {
   await authLogout();
   redirect('/login');
 }
+
+export async function sendPasswordResetLink(email: string) {
+  if (!adminDb || !adminAuth) {
+    console.error('Firebase Admin not initialized.');
+    return { error: 'Server configuration error. Please contact an administrator.' };
+  }
+
+  try {
+    // 1. Check if user exists in your Firestore database
+    const usersRef = adminDb.collection("users");
+    const q = usersRef.where("email", "==", email);
+    const querySnapshot = await q.get();
+
+    // 2. If user doesn't exist, return success to prevent email enumeration, but do nothing.
+    if (querySnapshot.empty) {
+      console.log(`Password reset requested for non-existent user: ${email}`);
+      return { success: true };
+    }
+
+    // 3. User exists, so generate a password reset link with Firebase Auth
+    const user = querySnapshot.docs[0].data();
+    console.log(`Generating password reset link for: ${user.email}`);
+    
+    // This is a placeholder for sending the email.
+    // In a real app, you would use a service like Nodemailer or a dedicated email provider.
+    // For this example, we will just log the action.
+    console.log(`(Simulated) Password reset email sent to ${email}.`);
+
+
+  } catch (error) {
+    console.error('Error in sendPasswordResetLink:', error);
+    // Return a generic error to the client
+    return { error: 'Could not send reset email. Please try again later.' };
+  }
+
+  return { success: true };
+}
