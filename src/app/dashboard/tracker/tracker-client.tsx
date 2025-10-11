@@ -303,8 +303,11 @@ function SheetComparator() {
     try {
       const [dataA, dataB] = await Promise.all([parseSheet(sheetAUrl), parseSheet(sheetBUrl)]);
 
-      if (dataA.length === 0 || dataB.length === 0) {
-        throw new Error("One or both sheets are empty or could not be parsed.");
+      if (dataA.length === 0) {
+        throw new Error("Main Sheet (Sheet A) is empty or could not be parsed.");
+      }
+       if (dataB.length === 0) {
+        throw new Error("Reference Sheet (Sheet B) is empty or could not be parsed.");
       }
 
       const headersA = Object.keys(dataA[0]);
@@ -329,22 +332,47 @@ function SheetComparator() {
         regNo: headersB.find(h => possibleRegNoHeaders.includes(h.toLowerCase())) || '',
       };
       
-      const identifiersB = new Set<string>();
-      dataB.forEach(row => {
-        const ids = getIdentifierMap(row, headerMapB);
-        ids.forEach(id => identifiersB.add(id));
-      });
-
-      if (identifiersB.size === 0) {
+      const identifiersB = dataB.map(row => getIdentifierMap(row, headerMapB));
+      
+      if (identifiersB.every(ids => ids.size === 0)) {
         throw new Error("Could not find any identifying columns (email, name, etc.) in the Reference Sheet (Sheet B).");
       }
 
       const missing = dataA.filter(rowA => {
         const idsA = getIdentifierMap(rowA, headerMapA);
-        if (idsA.size === 0) return false;
-        
-        // Return true (missing) if NOT SOME of the identifiers in A are present in B
-        return ![...idsA.values()].some(id => identifiersB.has(id));
+        if (idsA.size === 0) return false; // Cannot determine if a row with no identifiers is missing
+
+        const isFound = identifiersB.some(idsB => {
+            if (idsB.size === 0) return false;
+            
+            const emailA = idsA.get('email');
+            const emailB = idsB.get('email');
+            if (emailA && emailB && emailA === emailB) {
+                return true;
+            }
+
+            const nameA = idsA.get('name');
+            const nameB = idsB.get('name');
+             if (nameA && nameB && nameA === nameB) {
+                return true;
+            }
+
+            const phoneA = idsA.get('phone');
+            const phoneB = idsB.get('phone');
+             if (phoneA && phoneB && phoneA === phoneB) {
+                return true;
+            }
+
+            const regNoA = idsA.get('regNo');
+            const regNoB = idsB.get('regNo');
+             if (regNoA && regNoB && regNoA === regNoB) {
+                return true;
+            }
+            
+            return false;
+        });
+
+        return !isFound;
       });
 
       setMissingEntries(missing);
@@ -438,5 +466,7 @@ export default function TrackerClient({ allUsers }: { allUsers: User[] }) {
     </Tabs>
   );
 }
+
+    
 
     
