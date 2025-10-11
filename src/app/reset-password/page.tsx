@@ -30,6 +30,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getAuth, confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { app } from '@/lib/firebase';
+import { Logo } from '@/components/logo';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters.'),
@@ -47,6 +48,7 @@ function ResetPasswordComponent() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -63,6 +65,16 @@ function ResetPasswordComponent() {
       console.error("Verification error:", error);
     });
   }, [oobCode]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown !== null && countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (countdown === 0) {
+      router.push('/login');
+    }
+    return () => clearTimeout(timer);
+  }, [countdown, router]);
 
 
   const form = useForm<ResetPasswordFormValues>({
@@ -87,7 +99,7 @@ function ResetPasswordComponent() {
           title: 'Password Reset Successful',
           description: 'You can now log in with your new password.',
         });
-        router.push('/login');
+        setCountdown(5);
       } catch (error: any) {
         console.error("Reset failed", error);
         setError(error.message || 'Failed to reset password. The link may be expired.');
@@ -140,6 +152,11 @@ function ResetPasswordComponent() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+            {countdown !== null && (
+              <div className="text-center text-sm text-muted-foreground">
+                Redirecting you to the login page in {countdown}...
+              </div>
+            )}
              <FormField
                 control={form.control}
                 name="password"
@@ -152,7 +169,7 @@ function ResetPasswordComponent() {
                             type={showPassword ? 'text' : 'password'}
                             placeholder="••••••••"
                             {...field}
-                            disabled={isPending}
+                            disabled={isPending || countdown !== null}
                             className="pr-10"
                         />
                         </FormControl>
@@ -160,7 +177,7 @@ function ResetPasswordComponent() {
                         type="button"
                         onClick={() => setShowPassword((prev) => !prev)}
                         className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
-                        disabled={isPending}
+                        disabled={isPending || countdown !== null}
                         >
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
@@ -181,7 +198,7 @@ function ResetPasswordComponent() {
                             type={showConfirmPassword ? 'text' : 'password'}
                             placeholder="••••••••"
                             {...field}
-                            disabled={isPending}
+                            disabled={isPending || countdown !== null}
                             className="pr-10"
                         />
                         </FormControl>
@@ -189,7 +206,7 @@ function ResetPasswordComponent() {
                         type="button"
                         onClick={() => setShowConfirmPassword((prev) => !prev)}
                         className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
-                        disabled={isPending}
+                        disabled={isPending || countdown !== null}
                         >
                         {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
@@ -199,9 +216,12 @@ function ResetPasswordComponent() {
                 )}
                 />
           </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={isPending}>
+          <CardFooter className="flex flex-col gap-4">
+            <Button type="submit" className="w-full" disabled={isPending || countdown !== null}>
               {isPending ? 'Resetting...' : 'Set New Password'}
+            </Button>
+            <Button variant="link" asChild>
+              <Link href="/login">⬅️ Back to Login!</Link>
             </Button>
           </CardFooter>
         </form>
@@ -213,7 +233,12 @@ function ResetPasswordComponent() {
 
 export default function ResetPasswordPage() {
     return (
-        <main className="flex min-h-screen flex-col items-center justify-center p-8">
+        <main className="flex min-h-screen flex-col items-center justify-center p-8 gap-8">
+            <Card className="glass">
+                <CardContent className="flex items-center justify-center p-6">
+                    <Logo />
+                </CardContent>
+            </Card>
             <Suspense fallback={<div>Loading...</div>}>
                 <ResetPasswordComponent />
             </Suspense>

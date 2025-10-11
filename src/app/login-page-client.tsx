@@ -95,7 +95,7 @@ export default function LoginPageClient() {
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="m@example.com"
+                      placeholder="ab1234@srmist.edu.in"
                       {...field}
                       disabled={isPending}
                     />
@@ -113,9 +113,9 @@ export default function LoginPageClient() {
                     <FormLabel>Password</FormLabel>
                     <Link
                       href="/forgot-password"
-                      className="ml-auto inline-block text-xs underline"
+                      className="ml-auto inline-block text-xs"
                     >
-                      Forgot password?
+                      Forgot Password?
                     </Link>
                   </div>
                   <div className="relative">
@@ -162,7 +162,7 @@ export default function LoginPageClient() {
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>
-                      Remember this device
+                      Remember this Device? Yes!
                     </FormLabel>
                   </div>
                 </FormItem>
@@ -171,7 +171,7 @@ export default function LoginPageClient() {
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending ? 'Signing in...' : 'Sign in'}
+              {isPending ? 'Logging in...' : 'Login'}
             </Button>
           </CardFooter>
         </form>
