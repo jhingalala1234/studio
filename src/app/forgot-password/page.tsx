@@ -22,12 +22,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { sendPasswordResetLink } from '../actions';
 import { useTransition, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { app } from '@/lib/firebase';
 
 const emailSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -52,18 +53,17 @@ export default function ForgotPasswordPage() {
     setError(null);
     setSuccess(null);
     startTransition(async () => {
-      const result = await sendPasswordResetLink(data);
-      if (result?.error) {
-        setError(result.error);
-        toast({
-          variant: 'destructive',
-          title: 'Request Failed',
-          description: result.error,
+      try {
+        const auth = getAuth(app);
+        await sendPasswordResetEmail(auth, data.email, {
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/login` // Redirect back to login after reset
         });
-      }
-      if (result?.success) {
-        setSuccess(result.success);
+        setSuccess('If an account exists for this email, a password reset link has been sent. Please check your inbox.');
         form.reset();
+      } catch (error: any) {
+        console.error("Password reset email failed to send:", error);
+        // We still show a generic success message to prevent user enumeration
+        setSuccess('If an account exists for this email, a password reset link has been sent. Please check your inbox.');
       }
     });
   };
