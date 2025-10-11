@@ -9,11 +9,20 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, CheckCircle, XCircle, Users, FileDiff } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle, Users, FileDiff, ArrowRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 type TrackingStatus = 'submitted' | 'not_submitted';
 type TrackingResult = {
@@ -250,163 +259,297 @@ function SubmissionTracker({ allUsers }: { allUsers: User[] }) {
   );
 }
 
+type SheetInfo = { name: string; gid: string };
+type Stage = 'URLS' | 'SHEETS' | 'COLUMNS' | 'RESULTS';
+
 function SheetComparator() {
+  const [stage, setStage] = useState<Stage>('URLS');
+
+  // Stage 1: URLs
   const [sheetAUrl, setSheetAUrl] = useState('');
   const [sheetBUrl, setSheetBUrl] = useState('');
+
+  // Stage 2: Sheets
+  const [sheetAList, setSheetAList] = useState<SheetInfo[]>([]);
+  const [sheetBList, setSheetBList] = useState<SheetInfo[]>([]);
+  const [selectedGidA, setSelectedGidA] = useState('');
+  const [selectedGidB, setSelectedGidB] = useState('');
+
+  // Stage 3: Columns
+  const [sheetAColumns, setSheetAColumns] = useState<string[]>([]);
+  const [sheetBColumns, setSheetBColumns] = useState<string[]>([]);
+  const [selectedColumnsA, setSelectedColumnsA] = useState<string[]>([]);
+  const [selectedColumnsB, setSelectedColumnsB] = useState<string[]>([]);
+
+  // Stage 4: Results
+  const [missingEntries, setMissingEntries] = useState<any[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [missingEntries, setMissingEntries] = useState<any[] | null>(null);
   const { toast } = useToast();
 
-  const parseSheet = async (url: string): Promise<any[]> => {
-    if (!url.trim()) throw new Error('URL is empty.');
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Failed to fetch from ${url}`);
-    const csvText = await response.text();
-    return new Promise((resolve, reject) => {
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => resolve(results.data),
-        error: (err: any) => reject(new Error(`CSV Parsing Error: ${err.message}`)),
-      });
-    });
+  const resetState = (toStage: Stage = 'URLS') => {
+    setError(null);
+    if (toStage === 'URLS') {
+        setSheetAUrl('');
+        setSheetBUrl('');
+    }
+    setSheetAList([]);
+    setSheetBList([]);
+    setSelectedGidA('');
+    setSelectedGidB('');
+    setSheetAColumns([]);
+    setSheetBColumns([]);
+    setSelectedColumnsA([]);
+    setSelectedColumnsB([]);
+    setMissingEntries([]);
+    setStage(toStage);
   };
 
-  const getIdentifierMap = (row: any, headerMap: Record<string, string>): Map<string, string> => {
-    const identifiers = new Map<string, string>();
-    const email = row[headerMap.email] ? String(row[headerMap.email]).trim().toLowerCase() : '';
-    if (email.endsWith('@srmist.edu.in')) {
-      identifiers.set('email', email);
-    }
-    if (headerMap.name && row[headerMap.name]) {
-      identifiers.set('name', String(row[headerMap.name]).trim().toLowerCase());
-    }
-    if (headerMap.phone && row[headerMap.phone]) {
-      identifiers.set('phone', String(row[headerMap.phone]).trim().replace(/\s/g, ''));
-    }
-    if (headerMap.regNo && row[headerMap.regNo]) {
-      identifiers.set('regNo', String(row[headerMap.regNo]).trim().toLowerCase());
-    }
-    return identifiers;
-  };
-
-  const handleCompare = async () => {
+  const handleFetchSheets = async () => {
     if (!sheetAUrl.trim() || !sheetBUrl.trim()) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Please provide both sheet URLs.' });
+      setError('Please provide both sheet URLs.');
       return;
     }
     setIsLoading(true);
     setError(null);
-    setMissingEntries(null);
+
+    const parseSheetList = async (url: string): Promise<SheetInfo[]> => {
+        const response = await fetch(url.replace('/pub?output=csv', '/pubhtml'));
+        if (!response.ok) throw new Error(`Failed to fetch sheet list from ${url}`);
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const sheetLinks = doc.querySelectorAll('#sheet-menu li a');
+        if (sheetLinks.length === 0) {
+            // Fallback for single-sheet documents
+            return [{ name: 'Default Sheet', gid: '0' }];
+        }
+        return Array.from(sheetLinks).map(link => ({
+            name: link.textContent || 'Unnamed Sheet',
+            gid: new URLSearchParams(link.getAttribute('href') || '').get('gid') || '0',
+        }));
+    };
 
     try {
-      const [dataA, dataB] = await Promise.all([parseSheet(sheetAUrl), parseSheet(sheetBUrl)]);
-
-      if (dataA.length === 0) {
-        throw new Error("Main Sheet (Sheet A) is empty or could not be parsed.");
-      }
-       if (dataB.length === 0) {
-        throw new Error("Reference Sheet (Sheet B) is empty or could not be parsed.");
-      }
-
-      const headersA = Object.keys(dataA[0]);
-      const headersB = Object.keys(dataB[0]);
-
-      const possibleEmailHeaders = ['email', 'email address'];
-      const possibleNameHeaders = ['name', 'full name'];
-      const possiblePhoneHeaders = ['phone', 'phone number'];
-      const possibleRegNoHeaders = ['regno', 'reg no', 'registration no', 'registration number'];
-
-      const headerMapA = {
-        email: headersA.find(h => possibleEmailHeaders.includes(h.toLowerCase())) || '',
-        name: headersA.find(h => possibleNameHeaders.includes(h.toLowerCase())) || '',
-        phone: headersA.find(h => possiblePhoneHeaders.includes(h.toLowerCase())) || '',
-        regNo: headersA.find(h => possibleRegNoHeaders.includes(h.toLowerCase())) || '',
-      };
-
-      const headerMapB = {
-        email: headersB.find(h => possibleEmailHeaders.includes(h.toLowerCase())) || '',
-        name: headersB.find(h => possibleNameHeaders.includes(h.toLowerCase())) || '',
-        phone: headersB.find(h => possiblePhoneHeaders.includes(h.toLowerCase())) || '',
-        regNo: headersB.find(h => possibleRegNoHeaders.includes(h.toLowerCase())) || '',
-      };
-      
-      const identifiersB = dataB.map(row => getIdentifierMap(row, headerMapB));
-      
-      if (identifiersB.every(ids => ids.size === 0)) {
-        throw new Error("Could not find any identifying columns (email, name, etc.) in the Reference Sheet (Sheet B).");
-      }
-
-      const missing = dataA.filter(rowA => {
-        const idsA = getIdentifierMap(rowA, headerMapA);
-        if (idsA.size === 0) return false; // Cannot determine if a row with no identifiers is missing
-
-        const isFound = identifiersB.some(idsB => {
-            if (idsB.size === 0) return false;
-            
-            const emailA = idsA.get('email');
-            const emailB = idsB.get('email');
-            if (emailA && emailB && emailA === emailB) {
-                return true;
-            }
-
-            const nameA = idsA.get('name');
-            const nameB = idsB.get('name');
-             if (nameA && nameB && nameA === nameB) {
-                return true;
-            }
-
-            const phoneA = idsA.get('phone');
-            const phoneB = idsB.get('phone');
-             if (phoneA && phoneB && phoneA === phoneB) {
-                return true;
-            }
-
-            const regNoA = idsA.get('regNo');
-            const regNoB = idsB.get('regNo');
-             if (regNoA && regNoB && regNoA === regNoB) {
-                return true;
-            }
-            
-            return false;
-        });
-
-        return !isFound;
-      });
-
-      setMissingEntries(missing);
-      toast({
-        title: 'Comparison Complete',
-        description: `Found ${missing.length} entries in Sheet A that are not in Sheet B.`,
-      });
-
+      const [sheetsA, sheetsB] = await Promise.all([parseSheetList(sheetAUrl), parseSheetList(sheetBUrl)]);
+      setSheetAList(sheetsA);
+      setSheetBList(sheetsB);
+      setSelectedGidA(sheetsA[0]?.gid || '');
+      setSelectedGidB(sheetsB[0]?.gid || '');
+      setStage('SHEETS');
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-      setError(errorMessage);
-      toast({ variant: 'destructive', title: 'Comparison Failed', description: errorMessage });
+      const msg = e instanceof Error ? e.message : 'Could not fetch sheet details. Check URLs and publish settings.';
+      setError(msg);
+      toast({ variant: 'destructive', title: 'Error', description: msg });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleFetchColumns = async () => {
+    if (!selectedGidA || !selectedGidB) {
+        setError('Please select a sheet from both documents.');
+        return;
+    }
+    setIsLoading(true);
+    setError(null);
+
+    const getBaseUrl = (url: string) => url.split('/pub?')[0];
+    
+    const parseColumns = async (baseUrl: string, gid: string): Promise<string[]> => {
+        const url = `${baseUrl}/pub?gid=${gid}&single=true&output=csv`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch data for sheet gid ${gid}`);
+        const csvText = await response.text();
+        return new Promise((resolve, reject) => {
+            Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true,
+                preview: 1,
+                complete: (results) => {
+                    if (results.meta.fields) {
+                        resolve(results.meta.fields);
+                    } else {
+                        reject(new Error('Could not parse column headers.'));
+                    }
+                },
+            });
+        });
+    };
+
+    try {
+        const [colsA, colsB] = await Promise.all([
+            parseColumns(getBaseUrl(sheetAUrl), selectedGidA),
+            parseColumns(getBaseUrl(sheetBUrl), selectedGidB)
+        ]);
+        setSheetAColumns(colsA);
+        setSheetBColumns(colsB);
+        setStage('COLUMNS');
+    } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Could not fetch column data.';
+        setError(msg);
+        toast({ variant: 'destructive', title: 'Error', description: msg });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleCompare = async () => {
+     if (selectedColumnsA.length === 0 || selectedColumnsB.length === 0) {
+        setError('Please select at least one column from each sheet to compare.');
+        return;
+    }
+    setIsLoading(true);
+    setError(null);
+
+    const getBaseUrl = (url: string) => url.split('/pub?')[0];
+    
+    const parseData = (baseUrl: string, gid: string): Promise<any[]> => {
+        const url = `${baseUrl}/pub?gid=${gid}&single=true&output=csv`;
+        return new Promise(async (resolve, reject) => {
+            const response = await fetch(url);
+            if (!response.ok) return reject(new Error('Failed to fetch data.'));
+            const csvText = await response.text();
+            Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => resolve(results.data),
+                error: (err) => reject(new Error(`CSV Parsing Error: ${err.message}`)),
+            });
+        });
+    };
+
+    try {
+        const [dataA, dataB] = await Promise.all([
+            parseData(getBaseUrl(sheetAUrl), selectedGidA),
+            parseData(getBaseUrl(sheetBUrl), selectedGidB)
+        ]);
+        
+        const getRowIdentifiers = (row: any, columns: string[]) => {
+            const ids = new Set<string>();
+            columns.forEach(col => {
+                const value = String(row[col] || '').trim().toLowerCase();
+                if (value) ids.add(value);
+            });
+            return ids;
+        };
+
+        const identifiersB = dataB.map(row => getRowIdentifiers(row, selectedColumnsB));
+        
+        const missing = dataA.filter(rowA => {
+            const idsA = getRowIdentifiers(rowA, selectedColumnsA);
+            if (idsA.size === 0) return false;
+            
+            return !identifiersB.some(idsB => {
+                for (const idA of idsA) {
+                    if (idsB.has(idA)) return true;
+                }
+                return false;
+            });
+        });
+
+        setMissingEntries(missing);
+        setStage('RESULTS');
+
+    } catch (e) {
+        const msg = e instanceof Error ? e.message : 'An unknown error occurred during comparison.';
+        setError(msg);
+        toast({ variant: 'destructive', title: 'Error', description: msg });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const renderColumnSelector = (title: string, columns: string[], selected: string[], setSelected: (cols: string[]) => void) => (
+      <div className="space-y-2">
+          <h3 className="font-semibold">{title}</h3>
+          <p className="text-sm text-muted-foreground">Select columns to use for matching.</p>
+          <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto rounded-md border p-2">
+              {columns.map(col => (
+                  <div key={col} className="flex items-center space-x-2">
+                      <Checkbox
+                          id={`${title}-${col}`}
+                          checked={selected.includes(col)}
+                          onCheckedChange={checked => {
+                              const newSelection = checked
+                                  ? [...selected, col]
+                                  : selected.filter(c => c !== col);
+                              setSelected(newSelection);
+                          }}
+                      />
+                      <Label htmlFor={`${title}-${col}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          {col}
+                      </Label>
+                  </div>
+              ))}
+          </div>
+      </div>
+  );
+
   return (
      <div className="space-y-6">
       <Card className="glass">
-        <CardContent className="pt-6 space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="sheet-a-url" className="text-sm font-medium">Main Sheet URL (Sheet A)</label>
-            <Input id="sheet-a-url" placeholder="URL for the primary sheet..." value={sheetAUrl} onChange={(e) => setSheetAUrl(e.target.value)} disabled={isLoading} />
-             <p className="text-xs text-muted-foreground">The sheet to check entries from.</p>
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="sheet-b-url" className="text-sm font-medium">Reference Sheet URL (Sheet B)</label>
-            <Input id="sheet-b-url" placeholder="URL for the sheet to compare against..." value={sheetBUrl} onChange={(e) => setSheetBUrl(e.target.value)} disabled={isLoading} />
-             <p className="text-xs text-muted-foreground">The sheet containing entries to check for existence.</p>
-          </div>
-          <Button onClick={handleCompare} disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? 'Comparing...' : 'Compare Sheets'}
-          </Button>
+        <CardContent className="pt-6">
+          {stage === 'URLS' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="sheet-a-url">Main Sheet URL (Sheet A)</Label>
+                <Input id="sheet-a-url" placeholder="URL for the primary sheet..." value={sheetAUrl} onChange={(e) => setSheetAUrl(e.target.value)} disabled={isLoading} />
+                <p className="text-xs text-muted-foreground">The sheet to check entries from.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sheet-b-url">Reference Sheet URL (Sheet B)</Label>
+                <Input id="sheet-b-url" placeholder="URL for the sheet to compare against..." value={sheetBUrl} onChange={(e) => setSheetBUrl(e.target.value)} disabled={isLoading} />
+                <p className="text-xs text-muted-foreground">The sheet containing entries to check for existence.</p>
+              </div>
+              <Button onClick={handleFetchSheets} disabled={isLoading} className="w-full sm:w-auto">
+                {isLoading ? 'Fetching...' : 'Next: Select Sheets'} <ArrowRight className='ml-2'/>
+              </Button>
+            </div>
+          )}
+
+          {stage === 'SHEETS' && (
+             <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Select Sheet from Document A</Label>
+                    <Select value={selectedGidA} onValueChange={setSelectedGidA}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {sheetAList.map(s => <SelectItem key={s.gid} value={s.gid}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div className="space-y-2">
+                    <Label>Select Sheet from Document B</Label>
+                    <Select value={selectedGidB} onValueChange={setSelectedGidB}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {sheetBList.map(s => <SelectItem key={s.gid} value={s.gid}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className='flex gap-2'>
+                  <Button onClick={() => setStage('URLS')} variant="outline">Back</Button>
+                  <Button onClick={handleFetchColumns} disabled={isLoading} className="w-full sm:w-auto">
+                    {isLoading ? 'Fetching...' : 'Next: Select Columns'} <ArrowRight className='ml-2'/>
+                  </Button>
+                </div>
+            </div>
+          )}
+          
+          {stage === 'COLUMNS' && (
+              <div className="space-y-4">
+                {renderColumnSelector('Sheet A Columns', sheetAColumns, selectedColumnsA, setSelectedColumnsA)}
+                {renderColumnSelector('Sheet B Columns', sheetBColumns, selectedColumnsB, setSelectedColumnsB)}
+                <div className='flex gap-2'>
+                   <Button onClick={() => setStage('SHEETS')} variant="outline">Back</Button>
+                   <Button onClick={handleCompare} disabled={isLoading} className="w-full sm:w-auto">
+                      {isLoading ? 'Comparing...' : 'Compare Sheets'}
+                   </Button>
+                </div>
+              </div>
+          )}
+
           {error && (
              <Alert variant="destructive" className="mt-4">
               <AlertTriangle className="h-4 w-4" />
@@ -416,18 +559,24 @@ function SheetComparator() {
           )}
         </CardContent>
       </Card>
-      {missingEntries && (
+      
+      {stage === 'RESULTS' && (
          <Card className="glass">
             <CardHeader>
-                <CardTitle>Missing Entries ({missingEntries.length})</CardTitle>
-                <CardDescription>Entries found in the Main Sheet but not in the Reference Sheet.</CardDescription>
+                <div className='flex justify-between items-start'>
+                  <div>
+                    <CardTitle>Missing Entries ({missingEntries.length})</CardTitle>
+                    <CardDescription>Entries found in Sheet A but not in Sheet B.</CardDescription>
+                  </div>
+                  <Button onClick={() => resetState('URLS')} variant="outline">Start Over</Button>
+                </div>
             </CardHeader>
             <CardContent>
               {missingEntries.length > 0 ? (
                 <ScrollArea className="h-96">
                   <div className="space-y-2 pr-4">
                       {missingEntries.map((entry, index) => (
-                          <div key={index} className="flex items-center gap-4 rounded-md border p-2 text-xs sm:text-sm overflow-x-auto">
+                          <div key={index} className="grid grid-flow-col auto-cols-fr gap-4 items-center rounded-md border p-2 text-xs sm:text-sm">
                               {Object.values(entry).map((val, i) => (
                                 <p key={i} className="truncate" title={String(val)}>{String(val)}</p>
                               ))}
@@ -453,8 +602,8 @@ export default function TrackerClient({ allUsers }: { allUsers: User[] }) {
     <Tabs defaultValue="tracker" className="w-full">
       <div className="flex justify-center">
         <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-2">
-          <TabsTrigger value="tracker"><Users className="mr-2" />Submission Tracker</TabsTrigger>
-          <TabsTrigger value="comparator"><FileDiff className="mr-2" />Sheet Comparator</TabsTrigger>
+          <TabsTrigger value="tracker"><Users className="mr-2 h-4 w-4" />Submission Tracker</TabsTrigger>
+          <TabsTrigger value="comparator"><FileDiff className="mr-2 h-4 w-4" />Sheet Comparator</TabsTrigger>
         </TabsList>
       </div>
       <TabsContent value="tracker" className="mt-6">
@@ -466,7 +615,3 @@ export default function TrackerClient({ allUsers }: { allUsers: User[] }) {
     </Tabs>
   );
 }
-
-    
-
-    
